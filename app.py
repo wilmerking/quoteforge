@@ -3,13 +3,11 @@ import os
 import tempfile
 import sqlite3
 import geometry
-
-print("DEBUG: Geometry imported successfully")
 import costs
-
-print("DEBUG: Costs imported successfully")
 from utils import export
 
+print("DEBUG: Geometry imported successfully")
+print("DEBUG: Costs imported successfully")
 print("DEBUG: Export imported successfully")
 
 st.set_page_config(page_title="QuoteForge", layout="wide")

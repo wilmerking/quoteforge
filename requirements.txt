@@ -1,0 +1,7 @@
+streamlit
+cadquery
+pandas
+numpy
+stpyvista
+trimesh
+matplotlib

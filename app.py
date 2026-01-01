@@ -21,103 +21,82 @@ with st.sidebar:
     st.info("Configuration options will appear here.")
 
 # Placeholder for main content
-tab1, tab2 = st.tabs(["Single Part", "Batch Processing"])
+tab1, tab2, tab3, tab4 = st.tabs(["Import", "Configuration", "Costing", "Export"])
 
 with tab1:
-    st.header("Single Part Estimation")
-    uploaded_file = st.file_uploader("Upload STEP File", type=["stp", "step"])
+    st.header("Import")
 
-    if uploaded_file:
-        # Save uploaded file to temp
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".step") as tmp:
-            tmp.write(uploaded_file.getvalue())
-            tmp_path = tmp.name
+    # Initialize session state for uploaded files
+    if "uploaded_files" not in st.session_state:
+        st.session_state.uploaded_files = []
 
-        st.success(f"File uploaded: {uploaded_file.name}")
+    # File uploader
+    uploaded_files = st.file_uploader(
+        "Upload STEP Files",
+        type=["stp", "step"],
+        accept_multiple_files=True,
+        key="file_uploader",
+    )
 
-        # Geometry Analysis
-        try:
-            with st.spinner("Analyzing geometry..."):
-                analyzer = geometry.GeometryAnalyzer(tmp_path)
-                volume = analyzer.get_volume()
-                bbox = analyzer.get_bounding_box()
+    # Process newly uploaded files
+    if uploaded_files:
+        for uploaded_file in uploaded_files:
+            # Check if file already exists in session state
+            existing_names = [f["name"] for f in st.session_state.uploaded_files]
+            if uploaded_file.name not in existing_names:
+                # Save to temporary location
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".step") as tmp:
+                    tmp.write(uploaded_file.getvalue())
+                    tmp_path = tmp.name
 
-            st.subheader("Geometry Analysis")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Volume (in³)", f"{volume:.2f}")
-            col2.metric(
-                "Bounding Box (in)", f"{bbox[0]:.2f} x {bbox[1]:.2f} x {bbox[2]:.2f}"
-            )
-
-            # Costing Inputs
-            st.subheader("Cost Estimation")
-
-            # Load materials and processes from Google Sheets
-            materials_df = data_loader.get_materials()
-            processes_df = data_loader.get_processes()
-
-            # Material Selection
-            material_names = materials_df["name"].tolist()
-            selected_material = st.selectbox("Select Material", material_names)
-
-            # Process Selection
-            process_names = processes_df["name"].tolist()
-            selected_process = st.selectbox("Select Process", process_names)
-
-            # Manual Overrides
-            with st.expander("Manual Overrides"):
-                m_density = st.number_input(
-                    "Override Density (lbs/in³)", value=0.0, format="%.4f"
+                # Store file info in session state
+                st.session_state.uploaded_files.append(
+                    {
+                        "name": uploaded_file.name,
+                        "path": tmp_path,
+                        "size": uploaded_file.size,
+                    }
                 )
-                m_cost = st.number_input("Override Material Cost ($/lb)", value=0.0)
-                m_setup = st.number_input("Override Setup Cost ($)", value=0.0)
-                m_rate = st.number_input("Override Hourly Rate ($/hr)", value=0.0)
-                process_time = st.number_input("Process Time (hours)", value=1.0)
 
-            # Perform Calculation
-            mat_info = costs.get_material_rate(selected_material)
-            proc_info = costs.get_process_rates(selected_process)
+        st.success(f"Added {len(uploaded_files)} file(s)")
 
-            overrides = {}
-            if m_density > 0:
-                overrides["density_lbs_in3"] = m_density
-            if m_cost > 0:
-                overrides["material_cost_per_lb"] = m_cost
-            if m_setup > 0:
-                overrides["setup_cost"] = m_setup
-            if m_rate > 0:
-                overrides["hourly_rate"] = m_rate
-            overrides["process_time_hours"] = process_time
+    # Display uploaded files
+    if st.session_state.uploaded_files:
+        st.subheader(f"Imported Files ({len(st.session_state.uploaded_files)})")
 
-            cost_res = costs.calculate_part_cost(volume, mat_info, proc_info, overrides)
+        for idx, file_info in enumerate(st.session_state.uploaded_files):
+            col1, col2, col3 = st.columns([3, 2, 1])
 
-            st.divider()
-            st.metric("Estimated Mass", f"{cost_res['details']['mass_lbs']:.3f} lbs")
+            with col1:
+                st.text(file_info["name"])
 
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Material Cost", f"${cost_res['material_cost']}")
-            c2.metric("Processing Cost", f"${cost_res['processing_cost']}")
-            c3.metric("Total Cost", f"${cost_res['total_cost']}")
+            with col2:
+                # Display file size in KB
+                size_kb = file_info["size"] / 1024
+                st.text(f"{size_kb:.2f} KB")
 
-            # Export
-            st.divider()
-            csv_data = export.generate_csv_export(cost_res, uploaded_file.name)
-            st.download_button(
-                label="Download Estimate CSV",
-                data=csv_data,
-                file_name=f"estimate_{uploaded_file.name}.csv",
-                mime="text/csv",
-            )
+            with col3:
+                if st.button("Remove", key=f"remove_{idx}"):
+                    # Delete the temporary file
+                    try:
+                        os.remove(file_info["path"])
+                    except:
+                        pass  # File may already be deleted
 
-            # Cleanup
-            os.remove(tmp_path)
-
-        except Exception as e:
-            st.error(f"Error analyzing file: {e}")
-            import traceback
-
-            st.text(traceback.format_exc())
+                    # Remove from session state
+                    st.session_state.uploaded_files.pop(idx)
+                    st.rerun()
+    else:
+        st.info("No files imported yet. Upload STEP files to begin.")
 
 with tab2:
-    st.header("Batch Processing")
-    st.info("Batch processing coming in Phase 2.")
+    st.header("Configuration")
+    st.info("Configuration options will be implemented here.")
+
+with tab3:
+    st.header("Costing")
+    st.info("Costing calculations will be implemented here.")
+
+with tab4:
+    st.header("Export")
+    st.info("Export functionality will be implemented here.")

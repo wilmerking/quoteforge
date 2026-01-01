@@ -24,9 +24,6 @@ wheels/
 venv
 ENV/
 
-# Database
-quoteforge.db
-
 # Types
 .mypy_cache/
 .pytype/

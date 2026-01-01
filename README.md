@@ -37,23 +37,29 @@ Built entirely in Python with **Streamlit** for the interactive web UI and **Cad
    `source venv/bin/activate`
    `pip install -r requirements.txt`
 
-4. Initialize the database (pre-populate with sample materials/processes):
+4. Run the app:
 
-   `python db/init_db.py`
+   `./run.sh`
 
-5. Run the app:
+5. Open your browser (default: http://localhost:8501).
 
-   `streamlit run app.py`
+6. Upload STEP file(s) – single or multiple for batch.
 
-6. Open your browser (default: http://localhost:8501).
+7. Select material and processes from the Google Sheets-backed catalog.
 
-7. Upload STEP file(s) – single or multiple for batch.
+8. View geometry stats, cost estimates, and recommendations.
 
-8. Select material and processes (global for batch, or per-part if varying).
+9. Export results as CSV.
 
-9. View 3D previews, geometry stats, cost estimates, and recommendations.
+## Data Management
 
-10. Export results as CSV or PDF summary.
+QuoteForge uses **Google Sheets** as the data source for materials and processes. This allows easy manual updates without code changes.
+
+- **Configuration**: `config.json` contains the Google Sheets CSV endpoint URLs.
+- **Caching**: Data is cached for 15 minutes (configurable) to reduce API calls.
+- **Updating Data**: Simply edit the Google Sheets, and changes will be reflected in the app after the cache expires.
+
+To modify materials or processes, update the linked Google Sheets directly.
 
 ## Tech Stack Details
 

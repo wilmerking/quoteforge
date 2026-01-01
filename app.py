@@ -1,9 +1,9 @@
 import streamlit as st
 import os
 import tempfile
-import sqlite3
 import geometry
 import costs
+import data_loader
 from utils import export
 
 print("DEBUG: Geometry imported successfully")
@@ -52,19 +52,17 @@ with tab1:
             # Costing Inputs
             st.subheader("Cost Estimation")
 
-            conn = sqlite3.connect("quoteforge.db")  # Direct connection for dropdowns
-            cursor = conn.cursor()
+            # Load materials and processes from Google Sheets
+            materials_df = data_loader.get_materials()
+            processes_df = data_loader.get_processes()
 
             # Material Selection
-            cursor.execute("SELECT name FROM materials")
-            materials = [r[0] for r in cursor.fetchall()]
-            selected_material = st.selectbox("Select Material", materials)
+            material_names = materials_df["name"].tolist()
+            selected_material = st.selectbox("Select Material", material_names)
 
             # Process Selection
-            cursor.execute("SELECT name FROM processes")
-            processes = [r[0] for r in cursor.fetchall()]
-            selected_process = st.selectbox("Select Process", processes)
-            conn.close()
+            process_names = processes_df["name"].tolist()
+            selected_process = st.selectbox("Select Process", process_names)
 
             # Manual Overrides
             with st.expander("Manual Overrides"):
@@ -116,6 +114,9 @@ with tab1:
 
         except Exception as e:
             st.error(f"Error analyzing file: {e}")
+            import traceback
+
+            st.text(traceback.format_exc())
 
 with tab2:
     st.header("Batch Processing")

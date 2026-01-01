@@ -1,0 +1,7 @@
+{
+    "endpoints": {
+      "materials": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSzsaf_-1kq5Wjv_i4YWH3a1cbMo8uyCfY_O6byAEBbSTOgMPKKgCLAoVIAgmZEZKWyDKTaAF9SAays/pub?gid=624137797&single=true&output=csv",
+      "processes": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSzsaf_-1kq5Wjv_i4YWH3a1cbMo8uyCfY_O6byAEBbSTOgMPKKgCLAoVIAgmZEZKWyDKTaAF9SAays/pub?gid=1991533090&single=true&output=csv"
+    },
+    "refresh_rate_minutes": 15
+  }

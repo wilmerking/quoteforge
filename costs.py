@@ -1,34 +1,43 @@
-import sqlite3
-import os
+"""
+Cost calculation module for QuoteForge.
+Updated to use Google Sheets data via data_loader instead of SQLite.
+"""
 
-DB_PATH = "quoteforge.db"
+import data_loader
 
 
 def get_material_rate(material_name):
-    """Fetches (density_lbs_in3, cost_per_lb) for a given material name."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT density, cost_per_lb FROM materials WHERE name = ?", (material_name,)
-    )
-    result = cursor.fetchone()
-    conn.close()
-    if result:
-        return result  # (density_lbs_in3, cost_per_lb)
+    """
+    Fetches (density_lbs_in3, cost_per_lb) for a given material name.
+
+    Returns:
+        Tuple of (density, cost_per_lb) or None if not found
+    """
+    material = data_loader.get_material_by_name(material_name)
+
+    if material is not None:
+        # Access DataFrame columns by name
+        density = material["density (lb/in^3)"]
+        cost_per_lb = material["cost_per_lb"]
+        return (density, cost_per_lb)
+
     return None
 
 
 def get_process_rates(process_name):
-    """Fetches (setup_cost, hourly_rate) for a given process name."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT setup_cost, hourly_rate FROM processes WHERE name = ?", (process_name,)
-    )
-    result = cursor.fetchone()
-    conn.close()
-    if result:
-        return result  # (setup_cost, hourly_rate)
+    """
+    Fetches (setup_cost, hourly_rate) for a given process name.
+
+    Returns:
+        Tuple of (setup_cost, hourly_rate) or None if not found
+    """
+    process = data_loader.get_process_by_name(process_name)
+
+    if process is not None:
+        setup_cost = process["setup_cost"]
+        hourly_rate = process["hourly_rate"]
+        return (setup_cost, hourly_rate)
+
     return None
 
 

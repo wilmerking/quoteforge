@@ -110,7 +110,6 @@ with tab2:
                     "forming": False,
                     "threading": False,
                     "welding": False,
-                    "painting": False,
                     "finishing": None,
                 }
 
@@ -134,8 +133,39 @@ with tab2:
 
         material_names = materials_df["name"].tolist()
 
-        # Create header row
-        header_cols = st.columns([1, 2, 1, 3, 2, 1, 1, 1, 1, 1, 1, 1, 2])
+        # Add custom CSS for horizontal scroll with minimum width
+        st.markdown(
+            """
+            <style>
+            .config-table-container {
+                overflow-x: auto;
+                width: 100%;
+                min-width: 100%;
+            }
+            .config-table-content {
+                min-width: 1600px;
+                width: max-content;
+            }
+            /* Force column containers to not shrink */
+            div[data-testid="column"] {
+                min-width: fit-content !important;
+            }
+            </style>
+        """,
+            unsafe_allow_html=True,
+        )
+
+        # Start scrollable container with minimum width
+        st.markdown(
+            '<div class="config-table-container"><div class="config-table-content">',
+            unsafe_allow_html=True,
+        )
+
+        # Create header row with fixed widths (in pixels)
+        # Total width: ~1500px to ensure horizontal scroll on smaller screens
+        header_cols = st.columns(
+            [80, 180, 80, 200, 150, 100, 100, 100, 100, 100, 100, 150]
+        )
         header_cols[0].markdown("**Thumbnail**")
         header_cols[1].markdown("**Part Number**")
         header_cols[2].markdown("**Quantity**")
@@ -165,11 +195,7 @@ with tab2:
             "<div style='text-align: center'><strong>Welding</strong></div>",
             unsafe_allow_html=True,
         )
-        header_cols[11].markdown(
-            "<div style='text-align: center'><strong>Painting</strong></div>",
-            unsafe_allow_html=True,
-        )
-        header_cols[12].markdown("**Finishing**")
+        header_cols[11].markdown("**Finishing**")
 
         st.divider()
 
@@ -189,13 +215,14 @@ with tab2:
                     "forming": False,
                     "threading": False,
                     "welding": False,
-                    "painting": False,
                     "finishing": None,
                 }
 
             config = st.session_state.part_configs[part_number]
 
-            cols = st.columns([1, 2, 1, 3, 2, 1, 1, 1, 1, 1, 1, 1, 2])
+            cols = st.columns(
+                [80, 180, 80, 200, 150, 100, 100, 100, 100, 100, 100, 150]
+            )
 
             with cols[0]:
                 st.text("🖼️")  # Placeholder for thumbnail
@@ -329,20 +356,6 @@ with tab2:
                 config["welding"] = welding
 
             with cols[11]:
-                st.markdown(
-                    "<div style='display: flex; justify-content: center; align-items: center; height: 38px'>",
-                    unsafe_allow_html=True,
-                )
-                painting = st.checkbox(
-                    "Painting",
-                    value=config["painting"],
-                    key=f"paint_{idx}",
-                    label_visibility="collapsed",
-                )
-                st.markdown("</div>", unsafe_allow_html=True)
-                config["painting"] = painting
-
-            with cols[11]:
                 finishing_options = ["None"] + finishing_processes
                 finishing_index = (
                     finishing_options.index(config["finishing"])
@@ -360,9 +373,136 @@ with tab2:
 
             st.divider()
 
+        # Close scrollable container (both inner and outer divs)
+        st.markdown("</div></div>", unsafe_allow_html=True)
+
 with tab3:
     st.header("Costing")
-    st.info("Costing calculations will be implemented here.")
+
+    if not st.session_state.uploaded_files:
+        st.warning("No files imported. Please import files in the Import tab first.")
+    elif "part_configs" not in st.session_state or not st.session_state.part_configs:
+        st.warning(
+            "No configurations set. Please configure parts in the Configuration tab first."
+        )
+    else:
+        # Load process data for cost calculations
+        processes_df = data_loader.get_processes()
+
+        # Create header row
+        header_cols = st.columns([1, 2, 2, 2, 2, 2])
+        header_cols[0].markdown("**Thumbnail**")
+        header_cols[1].markdown("**Part Number**")
+        header_cols[2].markdown("**Weight (lbs)**")
+        header_cols[3].markdown("**Quantity**")
+        header_cols[4].markdown("**Per Part Cost**")
+        header_cols[5].markdown("**Total Cost**")
+
+        st.divider()
+
+        grand_total = 0.0
+
+        # Process each part
+        for file_info in st.session_state.uploaded_files:
+            part_number = file_info["name"]
+            file_path = file_info["path"]
+
+            # Get configuration for this part
+            config = st.session_state.part_configs.get(part_number, {})
+            quantity = config.get("quantity", 1)
+            material_name = config.get("material")
+
+            # Calculate geometry (volume) for weight
+            try:
+                analyzer = geometry.GeometryAnalyzer(file_path)
+                volume_in3 = analyzer.get_volume()
+            except Exception as e:
+                volume_in3 = 0.0
+                st.error(f"Error analyzing {part_number}: {e}")
+
+            # Get material info for weight calculation
+            weight_lbs = 0.0
+            if material_name:
+                mat_info = costs.get_material_rate(material_name)
+                if mat_info:
+                    density = mat_info[0]
+                    weight_lbs = volume_in3 * density
+
+            # Calculate process costs
+            total_process_cost = 0.0
+
+            # Cutting process
+            cutting = config.get("cutting")
+            if cutting:
+                proc_info = costs.get_process_rates(cutting)
+                if proc_info:
+                    total_process_cost += (
+                        proc_info[0] + proc_info[1]
+                    )  # setup + 1hr rate
+
+            # Checkbox processes
+            checkbox_processes = [
+                ("machining", "Machining"),
+                ("turning", "Turning"),
+                ("3d_printing", "3D Printing"),
+                ("forming", "Forming"),
+                ("threading", "Threading"),
+                ("welding", "Welding"),
+            ]
+
+            for config_key, process_name in checkbox_processes:
+                if config.get(config_key, False):
+                    proc_info = costs.get_process_rates(process_name)
+                    if proc_info:
+                        total_process_cost += (
+                            proc_info[0] + proc_info[1]
+                        )  # setup + 1hr rate
+
+            # Finishing process
+            finishing = config.get("finishing")
+            if finishing:
+                proc_info = costs.get_process_rates(finishing)
+                if proc_info:
+                    total_process_cost += (
+                        proc_info[0] + proc_info[1]
+                    )  # setup + 1hr rate
+
+            # Material cost
+            material_cost = 0.0
+            if material_name and weight_lbs > 0:
+                mat_info = costs.get_material_rate(material_name)
+                if mat_info:
+                    material_cost = weight_lbs * mat_info[1]  # weight * cost per lb
+
+            per_part_cost = material_cost + total_process_cost
+            total_cost = per_part_cost * quantity
+            grand_total += total_cost
+
+            # Display row
+            cols = st.columns([1, 2, 2, 2, 2, 2])
+
+            with cols[0]:
+                st.text("🖼️")
+
+            with cols[1]:
+                st.text(part_number)
+
+            with cols[2]:
+                st.text(f"{weight_lbs:.3f}")
+
+            with cols[3]:
+                st.text(str(quantity))
+
+            with cols[4]:
+                st.text(f"${per_part_cost:.2f}")
+
+            with cols[5]:
+                st.text(f"${total_cost:.2f}")
+
+            st.divider()
+
+        # Grand total
+        st.markdown(f"### Grand Total: **${grand_total:.2f}**")
 
 with tab4:
     st.header("Export")

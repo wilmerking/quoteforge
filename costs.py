@@ -5,16 +5,16 @@ DB_PATH = "quoteforge.db"
 
 
 def get_material_rate(material_name):
-    """Fetches (density, cost_per_kg) for a given material name."""
+    """Fetches (density_lbs_in3, cost_per_lb) for a given material name."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT density, cost_per_kg FROM materials WHERE name = ?", (material_name,)
+        "SELECT density, cost_per_lb FROM materials WHERE name = ?", (material_name,)
     )
     result = cursor.fetchone()
     conn.close()
     if result:
-        return result  # (density, cost_per_kg)
+        return result  # (density_lbs_in3, cost_per_lb)
     return None
 
 
@@ -32,40 +32,40 @@ def get_process_rates(process_name):
     return None
 
 
-def calculate_part_cost(volume_cm3, material_info, process_info, manual_overrides=None):
+def calculate_part_cost(volume_in3, material_info, process_info, manual_overrides=None):
     """
-    Calculates cost for a single part.
-    material_info: (density_g_cm3, cost_per_kg) or None
+    Calculates cost for a single part using Imperial units.
+
+    volume_in3: Volume in cubic inches
+    material_info: (density_lbs_in3, cost_per_lb) or None
     process_info: (setup_cost, hourly_rate) or None
-    manual_overrides: dict with 'material_cost_per_kg', 'setup_cost', 'hourly_rate', 'density', 'process_time_hours' (optional)
+    manual_overrides: dict with 'material_cost_per_lb', 'setup_cost', 'hourly_rate', 'density_lbs_in3', 'process_time_hours' (optional)
     """
 
     overrides = manual_overrides or {}
 
     # Material Cost
-    density = overrides.get("density")
-    cost_per_kg = overrides.get("material_cost_per_kg")
+    density = overrides.get("density_lbs_in3")
+    cost_per_lb = overrides.get("material_cost_per_lb")
 
     if material_info:
         if density is None:
             density = material_info[0]
-        if cost_per_kg is None:
-            cost_per_kg = material_info[1]
+        if cost_per_lb is None:
+            cost_per_lb = material_info[1]
 
-    if density is None or cost_per_kg is None:
-        material_cost_total = 0.0  # Cannot calculate
+    if density is None or cost_per_lb is None:
+        material_cost_total = 0.0
+        mass_lbs = 0.0
     else:
-        # volume is cm3, density g/cm3 -> mass in grams
-        mass_g = volume_cm3 * density
-        mass_kg = mass_g / 1000.0
-        material_cost_total = mass_kg * cost_per_kg
+        # volume is in3, density lbs/in3 -> mass in lbs
+        mass_lbs = volume_in3 * density
+        material_cost_total = mass_lbs * cost_per_lb
 
     # Process Cost
     setup_cost = overrides.get("setup_cost")
     hourly_rate = overrides.get("hourly_rate")
-    process_time = overrides.get(
-        "process_time_hours", 1.0
-    )  # Default 1 hour if not specified/calculated
+    process_time = overrides.get("process_time_hours", 1.0)
 
     if process_info:
         if setup_cost is None:
@@ -87,9 +87,9 @@ def calculate_part_cost(volume_cm3, material_info, process_info, manual_override
         "processing_cost": round(processing_cost_total, 2),
         "total_cost": round(total_cost, 2),
         "details": {
-            "mass_kg": round(mass_kg, 3) if "mass_kg" in locals() else 0,
+            "mass_lbs": round(mass_lbs, 3),
             "used_density": density,
-            "used_material_rate": cost_per_kg,
+            "used_material_rate": cost_per_lb,
             "used_setup": setup_cost,
             "used_hourly": hourly_rate,
             "process_time": process_time,

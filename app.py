@@ -13,7 +13,7 @@ print("DEBUG: Export imported successfully")
 st.set_page_config(page_title="QuoteForge", layout="wide")
 
 st.title("QuoteForge v2 🛠️")
-st.markdown("### Manufacturing Cost Estimator")
+st.markdown("### Manufacturing Cost Estimator (Imperial Units)")
 
 # Placeholder for sidebar
 with st.sidebar:
@@ -44,9 +44,9 @@ with tab1:
 
             st.subheader("Geometry Analysis")
             col1, col2, col3 = st.columns(3)
-            col1.metric("Volume (cm³)", f"{volume:.2f}")
+            col1.metric("Volume (in³)", f"{volume:.2f}")
             col2.metric(
-                "Bounding Box (mm)", f"{bbox[0]:.1f} x {bbox[1]:.1f} x {bbox[2]:.1f}"
+                "Bounding Box (in)", f"{bbox[0]:.2f} x {bbox[1]:.2f} x {bbox[2]:.2f}"
             )
 
             # Costing Inputs
@@ -68,8 +68,10 @@ with tab1:
 
             # Manual Overrides
             with st.expander("Manual Overrides"):
-                m_density = st.number_input("Override Density (g/cm³)", value=0.0)
-                m_cost = st.number_input("Override Material Cost ($/kg)", value=0.0)
+                m_density = st.number_input(
+                    "Override Density (lbs/in³)", value=0.0, format="%.4f"
+                )
+                m_cost = st.number_input("Override Material Cost ($/lb)", value=0.0)
                 m_setup = st.number_input("Override Setup Cost ($)", value=0.0)
                 m_rate = st.number_input("Override Hourly Rate ($/hr)", value=0.0)
                 process_time = st.number_input("Process Time (hours)", value=1.0)
@@ -80,9 +82,9 @@ with tab1:
 
             overrides = {}
             if m_density > 0:
-                overrides["density"] = m_density
+                overrides["density_lbs_in3"] = m_density
             if m_cost > 0:
-                overrides["material_cost_per_kg"] = m_cost
+                overrides["material_cost_per_lb"] = m_cost
             if m_setup > 0:
                 overrides["setup_cost"] = m_setup
             if m_rate > 0:
@@ -92,7 +94,7 @@ with tab1:
             cost_res = costs.calculate_part_cost(volume, mat_info, proc_info, overrides)
 
             st.divider()
-            st.metric("Estimated Mass", f"{cost_res['details']['mass_kg']:.3f} kg")
+            st.metric("Estimated Mass", f"{cost_res['details']['mass_lbs']:.3f} lbs")
 
             c1, c2, c3 = st.columns(3)
             c1.metric("Material Cost", f"${cost_res['material_cost']}")

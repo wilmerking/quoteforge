@@ -4,7 +4,7 @@ import io
 
 def generate_csv_export(cost_results, part_name):
     """
-    Generates a CSV string from the cost results dictionary.
+    Generates a CSV string from the cost results dictionary. (Imperial Units)
     """
     # Flatten the dictionary
     data = {
@@ -12,9 +12,9 @@ def generate_csv_export(cost_results, part_name):
         "Material Cost ($)": [cost_results["material_cost"]],
         "Processing Cost ($)": [cost_results["processing_cost"]],
         "Total Cost ($)": [cost_results["total_cost"]],
-        "Mass (kg)": [cost_results["details"].get("mass_kg", 0)],
-        "Used Density (g/cm3)": [cost_results["details"].get("used_density", 0)],
-        "Used Material Rate ($/kg)": [
+        "Mass (lbs)": [cost_results["details"].get("mass_lbs", 0)],
+        "Used Density (lbs/in³)": [cost_results["details"].get("used_density", 0)],
+        "Used Material Rate ($/lb)": [
             cost_results["details"].get("used_material_rate", 0)
         ],
         "Setup Cost ($)": [cost_results["details"].get("used_setup", 0)],

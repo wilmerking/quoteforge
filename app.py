@@ -12,8 +12,8 @@ print("DEBUG: Export imported successfully")
 
 st.set_page_config(page_title="QuoteForge", layout="wide")
 
-st.title("QuoteForge v2 🛠️")
-st.markdown("### Manufacturing Cost Estimator (Imperial Units)")
+st.title("QuoteForge 🛠️")
+st.markdown("### Manufacturing Cost Estimator")
 
 # Placeholder for sidebar
 with st.sidebar:

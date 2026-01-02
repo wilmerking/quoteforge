@@ -91,16 +91,16 @@ with tab2:
         processes_df = data_loader.get_processes()
 
         # Categorize processes
-        cutting_processes = processes_df[processes_df["Category"] == "Cutting"][
+        cutting_processes = processes_df[processes_df["category"] == "Cutting"][
             "name"
         ].tolist()
-        machining_processes = processes_df[processes_df["Category"] == "Machining"][
+        machining_processes = processes_df[processes_df["category"] == "Machining"][
             "name"
         ].tolist()
-        fabrication_processes = processes_df[processes_df["Category"] == "Fabrication"][
+        fabrication_processes = processes_df[processes_df["category"] == "Fabrication"][
             "name"
         ].tolist()
-        finishing_processes = processes_df[processes_df["Category"] == "Finishing"][
+        finishing_processes = processes_df[processes_df["category"] == "Finishing"][
             "name"
         ].tolist()
 
@@ -421,15 +421,16 @@ with tab3:
             if cutting:
                 proc_info = costs.get_process_rates(cutting)
                 if proc_info:
-                    setup_cost = proc_info[0]
+                    setup_time_mins = proc_info[0]
                     hourly_rate = proc_info[1]
+                    setup_cost = (setup_time_mins * hourly_rate) / 60.0
                     step_cost = setup_cost + hourly_rate  # Assuming 1 hr
                     total_process_cost += step_cost
                     cost_details.append(
                         {
                             "Process": cutting,
                             "Labor Cost": f"${hourly_rate:.2f}/hr",
-                            "Setup Time": f"${setup_cost:.2f} (Cost)",
+                            "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
                             "Per Part Time": "1.0 hr",
                             "Total": f"${step_cost:.2f}",
                         }
@@ -449,15 +450,16 @@ with tab3:
                 if config.get(config_key, False):
                     proc_info = costs.get_process_rates(process_name)
                     if proc_info:
-                        setup_cost = proc_info[0]
+                        setup_time_mins = proc_info[0]
                         hourly_rate = proc_info[1]
+                        setup_cost = (setup_time_mins * hourly_rate) / 60.0
                         step_cost = setup_cost + hourly_rate  # Assuming 1 hr
                         total_process_cost += step_cost
                         cost_details.append(
                             {
                                 "Process": process_name,
                                 "Labor Cost": f"${hourly_rate:.2f}/hr",
-                                "Setup Time": f"${setup_cost:.2f} (Cost)",
+                                "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
                                 "Per Part Time": "1.0 hr",
                                 "Total": f"${step_cost:.2f}",
                             }
@@ -468,15 +470,16 @@ with tab3:
             if finishing:
                 proc_info = costs.get_process_rates(finishing)
                 if proc_info:
-                    setup_cost = proc_info[0]
+                    setup_time_mins = proc_info[0]
                     hourly_rate = proc_info[1]
+                    setup_cost = (setup_time_mins * hourly_rate) / 60.0
                     step_cost = setup_cost + hourly_rate  # Assuming 1 hr
                     total_process_cost += step_cost
                     cost_details.append(
                         {
                             "Process": finishing,
                             "Labor Cost": f"${hourly_rate:.2f}/hr",
-                            "Setup Time": f"${setup_cost:.2f} (Cost)",
+                            "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
                             "Per Part Time": "1.0 hr",
                             "Total": f"${step_cost:.2f}",
                         }

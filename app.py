@@ -60,34 +60,6 @@ with tab1:
 
         st.success(f"Added {len(uploaded_files)} file(s)")
 
-    # Display uploaded files
-    if st.session_state.uploaded_files:
-        st.subheader(f"Imported Files ({len(st.session_state.uploaded_files)})")
-
-        for idx, file_info in enumerate(st.session_state.uploaded_files):
-            col1, col2, col3 = st.columns([3, 2, 1])
-
-            with col1:
-                st.text(file_info["name"])
-
-            with col2:
-                # Display file size in KB
-                size_kb = file_info["size"] / 1024
-                st.text(f"{size_kb:.2f} KB")
-
-            with col3:
-                if st.button("Remove", key=f"remove_{idx}"):
-                    # Delete the temporary file
-                    try:
-                        os.remove(file_info["path"])
-                    except:
-                        pass  # File may already be deleted
-
-                    # Remove from session state
-                    st.session_state.uploaded_files.pop(idx)
-                    st.rerun()
-    else:
-        st.info("No files imported yet. Upload STEP files to begin.")
 
 with tab2:
     st.header("Configuration")

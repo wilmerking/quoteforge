@@ -421,7 +421,6 @@ with tab3:
 
             # Helper for process row addition
             def add_process_row(p_name, p_info):
-                nonlocal batch_total_process_cost
                 setup_mins = p_info[0]
                 rate = p_info[1]
                 run_mins = 60.0  # Default to 60 mins for now
@@ -433,7 +432,6 @@ with tab3:
                 single_cost = setup_cost + run_cost_single
                 batch_cost = setup_cost + run_cost_batch
 
-                batch_total_process_cost += batch_cost
                 cost_details.append(
                     {
                         "Process": p_name,
@@ -444,13 +442,14 @@ with tab3:
                         "Batch Total": f"${batch_cost:.2f}",
                     }
                 )
+                return batch_cost
 
             # Cutting process
             cutting = config.get("cutting")
             if cutting:
                 proc_info = costs.get_process_rates(cutting)
                 if proc_info:
-                    add_process_row(cutting, proc_info)
+                    batch_total_process_cost += add_process_row(cutting, proc_info)
 
             # Checkbox processes
             checkbox_processes = [
@@ -466,14 +465,16 @@ with tab3:
                 if config.get(config_key, False):
                     proc_info = costs.get_process_rates(process_name)
                     if proc_info:
-                        add_process_row(process_name, proc_info)
+                        batch_total_process_cost += add_process_row(
+                            process_name, proc_info
+                        )
 
             # Finishing process
             finishing = config.get("finishing")
             if finishing:
                 proc_info = costs.get_process_rates(finishing)
                 if proc_info:
-                    add_process_row(finishing, proc_info)
+                    batch_total_process_cost += add_process_row(finishing, proc_info)
 
             total_cost = material_cost_batch + batch_total_process_cost
             per_part_cost = total_cost / quantity if quantity > 0 else 0
@@ -493,7 +494,7 @@ with tab3:
                     st.subheader(display_name)
 
                     metric_cols = st.columns(4)
-                    metric_cols[0].metric("Weight", f"{weight_lbs:3f} lbs")
+                    metric_cols[0].metric("Weight", f"{weight_lbs:.2f} lbs")
                     metric_cols[1].metric("Quantity", str(quantity))
                     metric_cols[2].metric("Per Part Cost", f"${per_part_cost:.2f}")
                     metric_cols[3].metric("Total Cost", f"${total_cost:.2f}")

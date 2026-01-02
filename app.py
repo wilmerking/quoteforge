@@ -400,43 +400,57 @@ with tab3:
             cost_details = []
 
             # Material cost
-            material_cost_total = 0.0
+            material_cost_single = 0.0
+            material_cost_batch = 0.0
             if material_name and weight_lbs > 0:
-                material_cost_total = weight_lbs * material_cost_per_lb
+                material_cost_single = weight_lbs * material_cost_per_lb
+                material_cost_batch = material_cost_single * quantity
                 cost_details.append(
                     {
                         "Process": f"Material: {material_name}",
-                        "Labor Cost": "$0.00",  # Material has no labor
+                        "Rate": f"${material_cost_per_lb:.2f}/lbs",
                         "Setup Time": "-",
-                        "Per Part Time": "-",
-                        "Total": f"${material_cost_total:.2f}",
+                        "Run time": "-",
+                        "Single Part Cost": f"${material_cost_single:.2f}",
+                        "Batch Total": f"${material_cost_batch:.2f}",
                     }
                 )
 
             # Calculate process costs
-            total_process_cost = 0.0
+            batch_total_process_cost = 0.0
+
+            # Helper for process row addition
+            def add_process_row(p_name, p_info):
+                nonlocal batch_total_process_cost
+                setup_mins = p_info[0]
+                rate = p_info[1]
+                run_mins = 60.0  # Default to 60 mins for now
+
+                setup_cost = (setup_mins * rate) / 60.0
+                run_cost_single = (run_mins * rate) / 60.0
+                run_cost_batch = run_cost_single * quantity
+
+                single_cost = setup_cost + run_cost_single
+                batch_cost = setup_cost + run_cost_batch
+
+                batch_total_process_cost += batch_cost
+                cost_details.append(
+                    {
+                        "Process": p_name,
+                        "Rate": f"${rate:.2f}/hr",
+                        "Setup Time": f"{setup_mins} mins (${setup_cost:.2f})",
+                        "Run time": f"{run_mins} mins (${run_cost_single:.2f})",
+                        "Single Part Cost": f"${single_cost:.2f}",
+                        "Batch Total": f"${batch_cost:.2f}",
+                    }
+                )
 
             # Cutting process
             cutting = config.get("cutting")
             if cutting:
                 proc_info = costs.get_process_rates(cutting)
                 if proc_info:
-                    setup_time_mins = proc_info[0]
-                    hourly_rate = proc_info[1]
-                    run_time_mins = 60.0  # Default to 60 mins for now
-                    setup_cost = (setup_time_mins * hourly_rate) / 60.0
-                    run_cost = (run_time_mins * hourly_rate) / 60.0
-                    step_cost = setup_cost + run_cost
-                    total_process_cost += step_cost
-                    cost_details.append(
-                        {
-                            "Process": cutting,
-                            "Labor Cost": f"${hourly_rate:.2f}/hr",
-                            "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
-                            "Per Part Time": f"{run_time_mins} mins (${run_cost:.2f})",
-                            "Total": f"${step_cost:.2f}",
-                        }
-                    )
+                    add_process_row(cutting, proc_info)
 
             # Checkbox processes
             checkbox_processes = [
@@ -452,47 +466,17 @@ with tab3:
                 if config.get(config_key, False):
                     proc_info = costs.get_process_rates(process_name)
                     if proc_info:
-                        setup_time_mins = proc_info[0]
-                        hourly_rate = proc_info[1]
-                        run_time_mins = 60.0  # Default to 60 mins for now
-                        setup_cost = (setup_time_mins * hourly_rate) / 60.0
-                        run_cost = (run_time_mins * hourly_rate) / 60.0
-                        step_cost = setup_cost + run_cost
-                        total_process_cost += step_cost
-                        cost_details.append(
-                            {
-                                "Process": process_name,
-                                "Labor Cost": f"${hourly_rate:.2f}/hr",
-                                "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
-                                "Per Part Time": f"{run_time_mins} mins (${run_cost:.2f})",
-                                "Total": f"${step_cost:.2f}",
-                            }
-                        )
+                        add_process_row(process_name, proc_info)
 
             # Finishing process
             finishing = config.get("finishing")
             if finishing:
                 proc_info = costs.get_process_rates(finishing)
                 if proc_info:
-                    setup_time_mins = proc_info[0]
-                    hourly_rate = proc_info[1]
-                    run_time_mins = 60.0  # Default to 60 mins for now
-                    setup_cost = (setup_time_mins * hourly_rate) / 60.0
-                    run_cost = (run_time_mins * hourly_rate) / 60.0
-                    step_cost = setup_cost + run_cost
-                    total_process_cost += step_cost
-                    cost_details.append(
-                        {
-                            "Process": finishing,
-                            "Labor Cost": f"${hourly_rate:.2f}/hr",
-                            "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
-                            "Per Part Time": f"{run_time_mins} mins (${run_cost:.2f})",
-                            "Total": f"${step_cost:.2f}",
-                        }
-                    )
+                    add_process_row(finishing, proc_info)
 
-            per_part_cost = material_cost_total + total_process_cost
-            total_cost = per_part_cost * quantity
+            total_cost = material_cost_batch + batch_total_process_cost
+            per_part_cost = total_cost / quantity if quantity > 0 else 0
             grand_total += total_cost
 
             # Render Card

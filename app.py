@@ -423,10 +423,18 @@ with tab3:
             quantity = config.get("quantity", 1)
             material_name = config.get("material")
 
-            # Calculate geometry (volume) for weight
+            # Calculate geometry (volume) and thumbnail
             try:
                 analyzer = geometry.GeometryAnalyzer(file_path)
                 volume_in3 = analyzer.get_volume()
+
+                # Generate thumbnail if not already in session state
+                thumb_key = f"thumb_{part_number}"
+                if thumb_key not in st.session_state:
+                    svg_data = analyzer.get_thumbnail_svg()
+                    if svg_data:
+                        st.session_state[thumb_key] = svg_data
+
             except Exception as e:
                 volume_in3 = 0.0
                 st.error(f"Error analyzing {part_number}: {e}")
@@ -552,8 +560,21 @@ with tab3:
                 )  # Adjusted for simple expander later
 
                 with col_img:
-                    st.text("🖼️")  # Thumbnail placeholder holder
-                    st.caption("Thumbnail")
+                    thumb_key = f"thumb_{part_number}"
+                    if thumb_key in st.session_state:
+                        svg_data = st.session_state[thumb_key]
+                        import base64
+
+                        b64_svg = base64.b64encode(svg_data.encode("utf-8")).decode(
+                            "utf-8"
+                        )
+                        st.markdown(
+                            f'<img src="data:image/svg+xml;base64,{b64_svg}" style="max-width: 100%; height: auto;"/>',
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.text("🖼️")  # Fallback
+                        st.caption("No Thumbnail")
 
                 with col_info:
                     st.subheader(display_name)

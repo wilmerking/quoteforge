@@ -56,3 +56,30 @@ class GeometryAnalyzer:
                 cq.exporters.export(self.shape, tmp.name)
                 return tmp.name
         return None
+
+    def get_thumbnail_svg(self):
+        """Generates an SVG thumbnail and returns the content as a string"""
+        if self.shape:
+            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp:
+                cq.exporters.export(
+                    self.shape,
+                    tmp.name,
+                    opt={
+                        "width": 200,
+                        "height": 200,
+                        "marginLeft": 5,
+                        "marginTop": 5,
+                        "showAxes": False,
+                        "projectionDir": (1, 1, 1),
+                        "strokeWidth": 0.5,
+                        "strokeColor": (0, 0, 0),
+                        "hiddenColor": (100, 100, 100),
+                        "showHidden": False,
+                    },
+                )
+                tmp.close()
+                with open(tmp.name, "r") as f:
+                    svg_content = f.read()
+                os.unlink(tmp.name)
+                return svg_content
+        return None

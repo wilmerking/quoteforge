@@ -470,8 +470,7 @@ with tab3:
                         "Run Mins": None,
                         "Setup Cost": None,
                         "Run Cost": None,
-                        "Single Part Cost": material_cost_single,
-                        "Batch Total": material_cost_batch,
+                        "Batch Total Cost": material_cost_batch,
                     }
                 )
 
@@ -493,7 +492,6 @@ with tab3:
                 run_cost_single = (run_mins * rate) / 60.0
                 run_cost_batch = run_cost_single * quantity
 
-                single_cost = setup_cost + run_cost_single
                 batch_cost = setup_cost + run_cost_batch
 
                 # Return batch cost to add to total
@@ -506,8 +504,7 @@ with tab3:
                         "Run Mins": run_mins,
                         "Setup Cost": setup_cost,
                         "Run Cost": run_cost_single,
-                        "Single Part Cost": single_cost,
-                        "Batch Total": batch_cost,
+                        "Batch Total Cost": batch_cost,
                     }
                 )
                 return batch_cost
@@ -582,8 +579,7 @@ with tab3:
                                 "Unit",
                                 "Setup Cost",
                                 "Run Cost",
-                                "Single Part Cost",
-                                "Batch Total",
+                                "Batch Total Cost",
                             ],
                             column_config={
                                 "Rate": st.column_config.NumberColumn(
@@ -601,16 +597,30 @@ with tab3:
                                 "Run Cost": st.column_config.NumberColumn(
                                     "Run Cost", format="$%.2f"
                                 ),
-                                "Single Part Cost": st.column_config.NumberColumn(
-                                    "Single Part Cost", format="$%.2f"
-                                ),
-                                "Batch Total": st.column_config.NumberColumn(
-                                    "Batch Total", format="$%.2f"
+                                "Batch Total Cost": st.column_config.NumberColumn(
+                                    "Batch Total Cost", format="$%.2f"
                                 ),
                             },
                             on_change=update_cost_overrides,
                             args=(part_number, f"editor_{part_number}", df),
                         )
+
+                        # Reset Defaults button
+                        has_overrides = (
+                            part_number in st.session_state.cost_overrides
+                            and bool(st.session_state.cost_overrides[part_number])
+                        )
+                        if st.button(
+                            "Reset to Defaults",
+                            key=f"reset_{part_number}",
+                            disabled=not has_overrides,
+                        ):
+                            if part_number in st.session_state.cost_overrides:
+                                del st.session_state.cost_overrides[part_number]
+                            # Clear the editor's internal state to ensure it resets visually
+                            if f"editor_{part_number}" in st.session_state:
+                                del st.session_state[f"editor_{part_number}"]
+                            st.rerun()
                     else:
                         st.info("No costs associated.")
         # Grand total

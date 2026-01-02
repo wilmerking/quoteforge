@@ -72,8 +72,8 @@ class GeometryAnalyzer:
                         "showAxes": False,
                         "projectionDir": (1, 1, 1),
                         "strokeWidth": 0.5,
-                        "strokeColor": (0, 0, 0),
-                        "hiddenColor": (100, 100, 100),
+                        "strokeColor": (255, 255, 255),
+                        "hiddenColor": (150, 150, 150),
                         "showHidden": False,
                     },
                 )

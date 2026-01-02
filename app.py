@@ -246,7 +246,34 @@ with tab2:
             )
 
             with cols[0]:
-                st.text("🖼️")  # Placeholder for thumbnail
+                # Generate thumbnail and geometry info
+                file_path = file_info["path"]
+                thumb_key = f"thumb_v2_{part_number}"
+
+                # We store result in session state to avoid re-analyzing on every widget interaction
+                # Note: geometry analyzer is still needed for volume calculation in tab 3, but we can do it here too
+                if thumb_key not in st.session_state:
+                    try:
+                        analyzer = geometry.GeometryAnalyzer(file_path)
+                        svg_data = analyzer.get_thumbnail_svg()
+                        if svg_data:
+                            st.session_state[thumb_key] = svg_data
+                        # Also cache volume if we already have the analyzer
+                        st.session_state[f"vol_{part_number}"] = analyzer.get_volume()
+                    except:
+                        pass
+
+                if thumb_key in st.session_state:
+                    import base64
+
+                    svg_data = st.session_state[thumb_key]
+                    b64_svg = base64.b64encode(svg_data.encode("utf-8")).decode("utf-8")
+                    st.markdown(
+                        f'<img src="data:image/svg+xml;base64,{b64_svg}" style="max-width: 100%; height: auto;"/>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.text("🖼️")
 
             with cols[1]:
                 st.text(display_name)
@@ -423,21 +450,18 @@ with tab3:
             quantity = config.get("quantity", 1)
             material_name = config.get("material")
 
-            # Calculate geometry (volume) and thumbnail
-            try:
-                analyzer = geometry.GeometryAnalyzer(file_path)
-                volume_in3 = analyzer.get_volume()
-
-                # Generate thumbnail if not already in session state
-                thumb_key = f"thumb_{part_number}"
-                if thumb_key not in st.session_state:
-                    svg_data = analyzer.get_thumbnail_svg()
-                    if svg_data:
-                        st.session_state[thumb_key] = svg_data
-
-            except Exception as e:
-                volume_in3 = 0.0
-                st.error(f"Error analyzing {part_number}: {e}")
+            # Get geometry info from session state or analyzer
+            vol_key = f"vol_{part_number}"
+            if vol_key in st.session_state:
+                volume_in3 = st.session_state[vol_key]
+            else:
+                try:
+                    analyzer = geometry.GeometryAnalyzer(file_path)
+                    volume_in3 = analyzer.get_volume()
+                    st.session_state[vol_key] = volume_in3
+                except Exception as e:
+                    volume_in3 = 0.0
+                    st.error(f"Error analyzing {part_number}: {e}")
 
             # Get material info for weight calculation
             weight_lbs = 0.0
@@ -560,7 +584,7 @@ with tab3:
                 )  # Adjusted for simple expander later
 
                 with col_img:
-                    thumb_key = f"thumb_{part_number}"
+                    thumb_key = f"thumb_v2_{part_number}"
                     if thumb_key in st.session_state:
                         svg_data = st.session_state[thumb_key]
                         import base64

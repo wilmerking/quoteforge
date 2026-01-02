@@ -423,15 +423,17 @@ with tab3:
                 if proc_info:
                     setup_time_mins = proc_info[0]
                     hourly_rate = proc_info[1]
+                    run_time_mins = 60.0  # Default to 60 mins for now
                     setup_cost = (setup_time_mins * hourly_rate) / 60.0
-                    step_cost = setup_cost + hourly_rate  # Assuming 1 hr
+                    run_cost = (run_time_mins * hourly_rate) / 60.0
+                    step_cost = setup_cost + run_cost
                     total_process_cost += step_cost
                     cost_details.append(
                         {
                             "Process": cutting,
                             "Labor Cost": f"${hourly_rate:.2f}/hr",
                             "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
-                            "Per Part Time": "1.0 hr",
+                            "Per Part Time": f"{run_time_mins} mins (${run_cost:.2f})",
                             "Total": f"${step_cost:.2f}",
                         }
                     )
@@ -452,15 +454,17 @@ with tab3:
                     if proc_info:
                         setup_time_mins = proc_info[0]
                         hourly_rate = proc_info[1]
+                        run_time_mins = 60.0  # Default to 60 mins for now
                         setup_cost = (setup_time_mins * hourly_rate) / 60.0
-                        step_cost = setup_cost + hourly_rate  # Assuming 1 hr
+                        run_cost = (run_time_mins * hourly_rate) / 60.0
+                        step_cost = setup_cost + run_cost
                         total_process_cost += step_cost
                         cost_details.append(
                             {
                                 "Process": process_name,
                                 "Labor Cost": f"${hourly_rate:.2f}/hr",
                                 "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
-                                "Per Part Time": "1.0 hr",
+                                "Per Part Time": f"{run_time_mins} mins (${run_cost:.2f})",
                                 "Total": f"${step_cost:.2f}",
                             }
                         )
@@ -472,15 +476,17 @@ with tab3:
                 if proc_info:
                     setup_time_mins = proc_info[0]
                     hourly_rate = proc_info[1]
+                    run_time_mins = 60.0  # Default to 60 mins for now
                     setup_cost = (setup_time_mins * hourly_rate) / 60.0
-                    step_cost = setup_cost + hourly_rate  # Assuming 1 hr
+                    run_cost = (run_time_mins * hourly_rate) / 60.0
+                    step_cost = setup_cost + run_cost
                     total_process_cost += step_cost
                     cost_details.append(
                         {
                             "Process": finishing,
                             "Labor Cost": f"${hourly_rate:.2f}/hr",
                             "Setup Time": f"{setup_time_mins} mins (${setup_cost:.2f})",
-                            "Per Part Time": "1.0 hr",
+                            "Per Part Time": f"{run_time_mins} mins (${run_cost:.2f})",
                             "Total": f"${step_cost:.2f}",
                         }
                     )

@@ -48,7 +48,7 @@ def calculate_part_cost(volume_in3, material_info, process_info, manual_override
     volume_in3: Volume in cubic inches
     material_info: (density_lbs_in3, cost_per_lb) or None
     process_info: (setup_time_mins, hourly_rate) or None
-    manual_overrides: dict with 'material_cost_per_lb', 'setup_time_mins', 'hourly_rate', 'density_lbs_in3', 'process_time_hours' (optional)
+    manual_overrides: dict with 'material_cost_per_lb', 'setup_time_mins', 'hourly_rate', 'density_lbs_in3', 'run_time_mins' (optional)
     """
 
     overrides = manual_overrides or {}
@@ -74,7 +74,7 @@ def calculate_part_cost(volume_in3, material_info, process_info, manual_override
     # Process Cost
     setup_time_mins = overrides.get("setup_time_mins")
     hourly_rate = overrides.get("hourly_rate")
-    process_time = overrides.get("process_time_hours", 1.0)
+    run_time_mins = overrides.get("run_time_mins", 60.0)
 
     if process_info:
         if setup_time_mins is None:
@@ -87,10 +87,11 @@ def calculate_part_cost(volume_in3, material_info, process_info, manual_override
     if hourly_rate is None:
         hourly_rate = 0.0
 
-    # Calculate setup cost from time
+    # Calculate costs from time
     setup_cost = (setup_time_mins * hourly_rate) / 60.0
+    run_cost = (run_time_mins * hourly_rate) / 60.0
 
-    processing_cost_total = setup_cost + (hourly_rate * process_time)
+    processing_cost_total = setup_cost + run_cost
 
     total_cost = material_cost_total + processing_cost_total
 
@@ -104,7 +105,8 @@ def calculate_part_cost(volume_in3, material_info, process_info, manual_override
             "used_material_rate": cost_per_lb,
             "used_setup_mins": setup_time_mins,
             "used_setup_cost": round(setup_cost, 2),
+            "used_run_mins": run_time_mins,
+            "used_run_cost": round(run_cost, 2),
             "used_hourly": hourly_rate,
-            "process_time": process_time,
         },
     }

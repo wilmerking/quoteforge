@@ -4,6 +4,7 @@ import tempfile
 import geometry
 import costs
 import data_loader
+import pandas as pd
 from utils import export
 
 print("DEBUG: Geometry imported successfully")
@@ -361,17 +362,6 @@ with tab3:
         # Load process data for cost calculations
         processes_df = data_loader.get_processes()
 
-        # Create header row
-        header_cols = st.columns([1, 2, 2, 2, 2, 2])
-        header_cols[0].markdown("**Thumbnail**")
-        header_cols[1].markdown("**Part Number**")
-        header_cols[2].markdown("**Weight (lbs)**")
-        header_cols[3].markdown("**Quantity**")
-        header_cols[4].markdown("**Per Part Cost**")
-        header_cols[5].markdown("**Total Cost**")
-
-        st.divider()
-
         grand_total = 0.0
 
         # Process each part
@@ -394,11 +384,32 @@ with tab3:
 
             # Get material info for weight calculation
             weight_lbs = 0.0
+            density = 0.0
+            material_cost_per_lb = 0.0
+
             if material_name:
                 mat_info = costs.get_material_rate(material_name)
                 if mat_info:
                     density = mat_info[0]
+                    material_cost_per_lb = mat_info[1]
                     weight_lbs = volume_in3 * density
+
+            # Prepare breakdown list
+            cost_details = []
+
+            # Material cost
+            material_cost_total = 0.0
+            if material_name and weight_lbs > 0:
+                material_cost_total = weight_lbs * material_cost_per_lb
+                cost_details.append(
+                    {
+                        "Process": f"Material: {material_name}",
+                        "Labor Cost": "$0.00",  # Material has no labor
+                        "Setup Time": "-",
+                        "Per Part Time": "-",
+                        "Total": f"${material_cost_total:.2f}",
+                    }
+                )
 
             # Calculate process costs
             total_process_cost = 0.0
@@ -408,9 +419,19 @@ with tab3:
             if cutting:
                 proc_info = costs.get_process_rates(cutting)
                 if proc_info:
-                    total_process_cost += (
-                        proc_info[0] + proc_info[1]
-                    )  # setup + 1hr rate
+                    setup_cost = proc_info[0]
+                    hourly_rate = proc_info[1]
+                    step_cost = setup_cost + hourly_rate  # Assuming 1 hr
+                    total_process_cost += step_cost
+                    cost_details.append(
+                        {
+                            "Process": cutting,
+                            "Labor Cost": f"${hourly_rate:.2f}/hr",
+                            "Setup Time": f"${setup_cost:.2f} (Cost)",
+                            "Per Part Time": "1.0 hr",
+                            "Total": f"${step_cost:.2f}",
+                        }
+                    )
 
             # Checkbox processes
             checkbox_processes = [
@@ -426,53 +447,71 @@ with tab3:
                 if config.get(config_key, False):
                     proc_info = costs.get_process_rates(process_name)
                     if proc_info:
-                        total_process_cost += (
-                            proc_info[0] + proc_info[1]
-                        )  # setup + 1hr rate
+                        setup_cost = proc_info[0]
+                        hourly_rate = proc_info[1]
+                        step_cost = setup_cost + hourly_rate  # Assuming 1 hr
+                        total_process_cost += step_cost
+                        cost_details.append(
+                            {
+                                "Process": process_name,
+                                "Labor Cost": f"${hourly_rate:.2f}/hr",
+                                "Setup Time": f"${setup_cost:.2f} (Cost)",
+                                "Per Part Time": "1.0 hr",
+                                "Total": f"${step_cost:.2f}",
+                            }
+                        )
 
             # Finishing process
             finishing = config.get("finishing")
             if finishing:
                 proc_info = costs.get_process_rates(finishing)
                 if proc_info:
-                    total_process_cost += (
-                        proc_info[0] + proc_info[1]
-                    )  # setup + 1hr rate
+                    setup_cost = proc_info[0]
+                    hourly_rate = proc_info[1]
+                    step_cost = setup_cost + hourly_rate  # Assuming 1 hr
+                    total_process_cost += step_cost
+                    cost_details.append(
+                        {
+                            "Process": finishing,
+                            "Labor Cost": f"${hourly_rate:.2f}/hr",
+                            "Setup Time": f"${setup_cost:.2f} (Cost)",
+                            "Per Part Time": "1.0 hr",
+                            "Total": f"${step_cost:.2f}",
+                        }
+                    )
 
-            # Material cost
-            material_cost = 0.0
-            if material_name and weight_lbs > 0:
-                mat_info = costs.get_material_rate(material_name)
-                if mat_info:
-                    material_cost = weight_lbs * mat_info[1]  # weight * cost per lb
-
-            per_part_cost = material_cost + total_process_cost
+            per_part_cost = material_cost_total + total_process_cost
             total_cost = per_part_cost * quantity
             grand_total += total_cost
 
-            # Display row
-            cols = st.columns([1, 2, 2, 2, 2, 2])
+            # Render Card
+            with st.container(border=True):
+                col_img, col_info, col_toggle = st.columns(
+                    [1, 4, 0.1]
+                )  # Adjusted for simple expander later
 
-            with cols[0]:
-                st.text("🖼️")
+                with col_img:
+                    st.text("🖼️")  # Thumbnail placeholder holder
+                    st.caption("Thumbnail")
 
-            with cols[1]:
-                st.text(part_number)
+                with col_info:
+                    st.subheader(part_number)
 
-            with cols[2]:
-                st.text(f"{weight_lbs:.3f}")
+                    metric_cols = st.columns(4)
+                    metric_cols[0].metric("Weight", f"{weight_lbs:.3f} lbs")
+                    metric_cols[1].metric("Quantity", str(quantity))
+                    metric_cols[2].metric("Per Part Cost", f"${per_part_cost:.2f}")
+                    metric_cols[3].metric("Total Cost", f"${total_cost:.2f}")
 
-            with cols[3]:
-                st.text(str(quantity))
-
-            with cols[4]:
-                st.text(f"${per_part_cost:.2f}")
-
-            with cols[5]:
-                st.text(f"${total_cost:.2f}")
-
-            st.divider()
-
+                # Details Expander
+                with st.expander("Cost Breakdown"):
+                    if cost_details:
+                        df = pd.DataFrame(cost_details)
+                        st.table(
+                            df
+                        )  # Using st.table for full view as per requirement "small table"
+                    else:
+                        st.info("No costs associated.")
         # Grand total
         st.markdown(f"### Grand Total: **${grand_total:.2f}**")
 

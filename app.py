@@ -175,6 +175,7 @@ with tab2:
         # Create rows for each part
         for idx, file_info in enumerate(st.session_state.uploaded_files):
             part_number = file_info["name"]
+            display_name = os.path.splitext(part_number)[0].replace("_", "-")
 
             # Ensure this part has a config
             if part_number not in st.session_state.part_configs:
@@ -201,7 +202,7 @@ with tab2:
                 st.text("🖼️")  # Placeholder for thumbnail
 
             with cols[1]:
-                st.text(part_number)
+                st.text(display_name)
 
             with cols[2]:
                 quantity = st.number_input(
@@ -367,6 +368,7 @@ with tab3:
         # Process each part
         for file_info in st.session_state.uploaded_files:
             part_number = file_info["name"]
+            display_name = os.path.splitext(part_number)[0].replace("_", "-")
             file_path = file_info["path"]
 
             # Get configuration for this part
@@ -495,10 +497,10 @@ with tab3:
                     st.caption("Thumbnail")
 
                 with col_info:
-                    st.subheader(part_number)
+                    st.subheader(display_name)
 
                     metric_cols = st.columns(4)
-                    metric_cols[0].metric("Weight", f"{weight_lbs:.3f} lbs")
+                    metric_cols[0].metric("Weight", f"{weight_lbs:3f} lbs")
                     metric_cols[1].metric("Quantity", str(quantity))
                     metric_cols[2].metric("Per Part Cost", f"${per_part_cost:.2f}")
                     metric_cols[3].metric("Total Cost", f"${total_cost:.2f}")

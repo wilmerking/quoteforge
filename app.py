@@ -60,8 +60,7 @@ def update_cost_overrides(part_number, key, df_ref):
                 ] = new_val
 
 
-st.title("QuoteForge 🛠️")
-st.markdown("### Manufacturing Cost Estimator")
+st.title("QuoteForge")
 
 # Placeholder for sidebar
 with st.sidebar:

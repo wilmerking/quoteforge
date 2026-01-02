@@ -67,10 +67,10 @@ class GeometryAnalyzer:
                     opt={
                         "width": 200,
                         "height": 200,
-                        "marginLeft": 5,
-                        "marginTop": 5,
+                        "marginLeft": 2,
+                        "marginTop": 2,
                         "showAxes": False,
-                        "projectionDir": (1, 1, 1),
+                        "projectionDir": (-1, 1, -1),
                         "strokeWidth": 0.5,
                         "strokeColor": (255, 255, 255),
                         "hiddenColor": (150, 150, 150),

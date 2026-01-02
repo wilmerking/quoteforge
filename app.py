@@ -13,6 +13,53 @@ print("DEBUG: Export imported successfully")
 
 st.set_page_config(page_title="QuoteForge", layout="wide")
 
+if "cost_overrides" not in st.session_state:
+    st.session_state.cost_overrides = {}
+
+
+def update_cost_overrides(part_number, key, df_ref):
+    """
+    Callback to update cost overrides based on data_editor changes.
+    df_ref is the DataFrame used to populate the editor, used to lookup Process names.
+    """
+    if key not in st.session_state:
+        return
+
+    changes = st.session_state[key].get("edited_rows", {})
+    if not changes:
+        return
+
+    if part_number not in st.session_state.cost_overrides:
+        st.session_state.cost_overrides[part_number] = {}
+
+    for idx, row_changes in changes.items():
+        # Get the process name from the reference DataFrame (by index)
+        # We use iloc[idx] because edited_rows keys are 0-based indices matching the data
+        process_name_full = df_ref.iloc[idx]["Process"]
+
+        # If it's a material row, it might look like "Material: Aluminum 6061"
+        # We'll store it by the full string key for simplicity in lookup
+        process_key = process_name_full
+
+        if process_key not in st.session_state.cost_overrides[part_number]:
+            st.session_state.cost_overrides[part_number][process_key] = {}
+
+        # Map column names to internal override keys
+        # We expect columns: "Rate", "Setup Mins", "Run Mins"
+        col_map = {
+            "Rate": "rate",
+            "Setup Mins": "setup_time_mins",
+            "Run Mins": "run_time_mins",
+        }
+
+        for col_name, new_val in row_changes.items():
+            if col_name in col_map:
+                override_key = col_map[col_name]
+                st.session_state.cost_overrides[part_number][process_key][
+                    override_key
+                ] = new_val
+
+
 st.title("QuoteForge 🛠️")
 st.markdown("### Manufacturing Cost Estimator")
 
@@ -396,23 +443,35 @@ with tab3:
                     material_cost_per_lb = mat_info[1]
                     weight_lbs = volume_in3 * density
 
-            # Prepare breakdown list
+            # Prepare breakdown list for DataFrame
             cost_details = []
 
-            # Material cost
+            # Calculate Material Cost with Overrides
+            mat_key = f"Material: {material_name}"
+            mat_ovr = st.session_state.cost_overrides.get(part_number, {}).get(
+                mat_key, {}
+            )
+
+            eff_mat_rate = float(mat_ovr.get("rate", material_cost_per_lb))
+            # Material doesn't use setup/run mins, setting to None/0 for display
+
             material_cost_single = 0.0
             material_cost_batch = 0.0
             if material_name and weight_lbs > 0:
-                material_cost_single = weight_lbs * material_cost_per_lb
+                material_cost_single = weight_lbs * eff_mat_rate
                 material_cost_batch = material_cost_single * quantity
+
                 cost_details.append(
                     {
-                        "Process": f"Material: {material_name}",
-                        "Rate": f"${material_cost_per_lb:.2f}/lbs",
-                        "Setup Time": "-",
-                        "Run time": "-",
-                        "Single Part Cost": f"${material_cost_single:.2f}",
-                        "Batch Total": f"${material_cost_batch:.2f}",
+                        "Process": mat_key,
+                        "Rate": eff_mat_rate,
+                        "Unit": "$/lbs",
+                        "Setup Mins": None,
+                        "Run Mins": None,
+                        "Setup Cost": None,
+                        "Run Cost": None,
+                        "Single Part Cost": material_cost_single,
+                        "Batch Total": material_cost_batch,
                     }
                 )
 
@@ -421,9 +480,14 @@ with tab3:
 
             # Helper for process row addition
             def add_process_row(p_name, p_info):
-                setup_mins = p_info[0]
-                rate = p_info[1]
-                run_mins = 60.0  # Default to 60 mins for now
+                # Check for overrides
+                p_ovr = st.session_state.cost_overrides.get(part_number, {}).get(
+                    p_name, {}
+                )
+
+                setup_mins = float(p_ovr.get("setup_time_mins", p_info[0]))
+                rate = float(p_ovr.get("rate", p_info[1]))
+                run_mins = float(p_ovr.get("run_time_mins", 60.0))
 
                 setup_cost = (setup_mins * rate) / 60.0
                 run_cost_single = (run_mins * rate) / 60.0
@@ -432,14 +496,18 @@ with tab3:
                 single_cost = setup_cost + run_cost_single
                 batch_cost = setup_cost + run_cost_batch
 
+                # Return batch cost to add to total
                 cost_details.append(
                     {
                         "Process": p_name,
-                        "Rate": f"${rate:.2f}/hr",
-                        "Setup Time": f"{setup_mins} mins (${setup_cost:.2f})",
-                        "Run time": f"{run_mins} mins (${run_cost_single:.2f})",
-                        "Single Part Cost": f"${single_cost:.2f}",
-                        "Batch Total": f"${batch_cost:.2f}",
+                        "Rate": rate,
+                        "Unit": "$/hr",
+                        "Setup Mins": setup_mins,
+                        "Run Mins": run_mins,
+                        "Setup Cost": setup_cost,
+                        "Run Cost": run_cost_single,
+                        "Single Part Cost": single_cost,
+                        "Batch Total": batch_cost,
                     }
                 )
                 return batch_cost
@@ -503,9 +571,46 @@ with tab3:
                 with st.expander("Cost Breakdown"):
                     if cost_details:
                         df = pd.DataFrame(cost_details)
-                        st.table(
-                            df
-                        )  # Using st.table for full view as per requirement "small table"
+                        st.data_editor(
+                            df,
+                            key=f"editor_{part_number}",
+                            use_container_width=True,
+                            hide_index=True,
+                            num_rows="fixed",
+                            disabled=[
+                                "Process",
+                                "Unit",
+                                "Setup Cost",
+                                "Run Cost",
+                                "Single Part Cost",
+                                "Batch Total",
+                            ],
+                            column_config={
+                                "Rate": st.column_config.NumberColumn(
+                                    "Rate", format="%.2f", min_value=0.0
+                                ),
+                                "Setup Mins": st.column_config.NumberColumn(
+                                    "Setup (mins)", format="%.1f", min_value=0.0
+                                ),
+                                "Run Mins": st.column_config.NumberColumn(
+                                    "Run (mins)", format="%.1f", min_value=0.0
+                                ),
+                                "Setup Cost": st.column_config.NumberColumn(
+                                    "Setup Cost", format="$%.2f"
+                                ),
+                                "Run Cost": st.column_config.NumberColumn(
+                                    "Run Cost", format="$%.2f"
+                                ),
+                                "Single Part Cost": st.column_config.NumberColumn(
+                                    "Single Part Cost", format="$%.2f"
+                                ),
+                                "Batch Total": st.column_config.NumberColumn(
+                                    "Batch Total", format="$%.2f"
+                                ),
+                            },
+                            on_change=update_cost_overrides,
+                            args=(part_number, f"editor_{part_number}", df),
+                        )
                     else:
                         st.info("No costs associated.")
         # Grand total

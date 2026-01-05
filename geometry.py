@@ -1,5 +1,5 @@
 try:
-    import cadquery as cq
+    import cadquery as cq  # type: ignore
 except ImportError as e:
     import sys
 
@@ -8,7 +8,7 @@ except ImportError as e:
     raise e
 import tempfile
 import os
-import trimesh
+import trimesh  # type: ignore
 
 
 class GeometryAnalyzer:
@@ -60,6 +60,15 @@ class GeometryAnalyzer:
     def get_thumbnail_svg(self):
         """Generates an SVG thumbnail and returns the content as a string"""
         if self.shape:
+            # Define the view vector
+            view_vector = (1, -1, 1)
+
+            # Rotate the geometry
+            # we rotate the object around teh view vector
+            angle_degrees = -60
+
+            # rotate the geometry
+            self.shape = self.shape.rotate((0, 0, 0), view_vector, angle_degrees)
             with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp:
                 cq.exporters.export(
                     self.shape,
@@ -70,8 +79,8 @@ class GeometryAnalyzer:
                         "marginLeft": 2,
                         "marginTop": 2,
                         "showAxes": False,
-                        "projectionDir": (-1, 1, -1),
-                        "strokeWidth": 0.5,
+                        "projectionDir": view_vector,
+                        "strokeWidth": 1,
                         "strokeColor": (255, 255, 255),
                         "hiddenColor": (150, 150, 150),
                         "showHidden": False,

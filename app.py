@@ -1,10 +1,10 @@
-import streamlit as st
+import streamlit as st  # type: ignore
 import os
 import tempfile
 import geometry
 import costs
 import data_loader
-import pandas as pd
+import pandas as pd  # type: ignore
 from utils import export
 
 print("DEBUG: Geometry imported successfully")

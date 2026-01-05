@@ -60,6 +60,17 @@ def update_cost_overrides(part_number, key, df_ref):
                 ] = new_val
 
 
+def update_quantity(part_number, key, other_key):
+    """
+    Callback to sync quantity across different tabs and update part_configs.
+    """
+    if key in st.session_state:
+        new_qty = st.session_state[key]
+        st.session_state.part_configs[part_number]["quantity"] = new_qty
+        if other_key:
+            st.session_state[other_key] = new_qty
+
+
 st.title("QuoteForge")
 
 # Placeholder for sidebar
@@ -279,14 +290,15 @@ with tab2:
                 st.text(display_name)
 
             with cols[2]:
-                quantity = st.number_input(
+                st.number_input(
                     "Qty",
                     min_value=1,
-                    value=config["quantity"],
-                    key=f"qty_{idx}",
+                    value=int(config["quantity"]),
+                    key=f"qty_{part_number}",
                     label_visibility="collapsed",
+                    on_change=update_quantity,
+                    args=(part_number, f"qty_{part_number}", f"cost_qty_{part_number}"),
                 )
-                config["quantity"] = quantity
 
             with cols[3]:
                 material_index = (
@@ -605,7 +617,18 @@ with tab3:
 
                     metric_cols = st.columns(4)
                     metric_cols[0].metric("Weight", f"{weight_lbs:.2f} lbs")
-                    metric_cols[1].metric("Quantity", str(quantity))
+                    metric_cols[1].number_input(
+                        "Quantity",
+                        min_value=1,
+                        value=int(quantity),
+                        key=f"cost_qty_{part_number}",
+                        on_change=update_quantity,
+                        args=(
+                            part_number,
+                            f"cost_qty_{part_number}",
+                            f"qty_{part_number}",
+                        ),
+                    )
                     metric_cols[2].metric("Per Part Cost", f"${per_part_cost:.2f}")
                     metric_cols[3].metric("Total Cost", f"${total_cost:.2f}")
 

@@ -209,7 +209,9 @@ with tab2:
 
         # Create header row with fixed widths (in pixels)
         # Total width: ~1500px to ensure horizontal scroll on smaller screens
-        header_cols = st.columns([100, 100, 100, 150, 100, 80, 80, 80, 80, 80, 80, 100])
+        header_cols = st.columns(
+            [100, 100, 100, 150, 100, 80, 80, 80, 80, 80, 80, 100],
+        )
         header_cols[0].markdown("**Thumbnail**")
         header_cols[1].markdown("**Part Number**")
         header_cols[2].markdown("**Quantity**")
@@ -265,7 +267,10 @@ with tab2:
 
             config = st.session_state.part_configs[part_number]
 
-            cols = st.columns([100, 100, 100, 150, 100, 80, 80, 80, 80, 80, 80, 100])
+            cols = st.columns(
+                [100, 100, 100, 150, 100, 80, 80, 80, 80, 80, 80, 100],
+                vertical_alignment="center",
+            )
 
             with cols[0]:
                 # Generate thumbnail and geometry info
@@ -344,87 +349,57 @@ with tab2:
                 config["cutting"] = cutting if cutting != "None" else None
 
             with cols[5]:
-                st.markdown(
-                    "<div style='display: flex; justify-content: center; align-items: center; height: 38px'>",
-                    unsafe_allow_html=True,
-                )
                 machining = st.checkbox(
                     "Machining",
                     value=config["machining"],
                     key=f"mach_{idx}",
                     label_visibility="collapsed",
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
                 config["machining"] = machining
 
             with cols[6]:
-                st.markdown(
-                    "<div style='display: flex; justify-content: center; align-items: center; height: 38px'>",
-                    unsafe_allow_html=True,
-                )
                 turning = st.checkbox(
                     "Turning",
                     value=config["turning"],
                     key=f"turn_{idx}",
                     label_visibility="collapsed",
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
                 config["turning"] = turning
 
             with cols[7]:
-                st.markdown(
-                    "<div style='display: flex; justify-content: center; align-items: center; height: 38px'>",
-                    unsafe_allow_html=True,
-                )
                 printing_3d = st.checkbox(
                     "3D Printing",
                     value=config["3d_printing"],
                     key=f"3dprint_{idx}",
                     label_visibility="collapsed",
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
                 config["3d_printing"] = printing_3d
 
             with cols[8]:
-                st.markdown(
-                    "<div style='display: flex; justify-content: center; align-items: center; height: 38px'>",
-                    unsafe_allow_html=True,
-                )
                 forming = st.checkbox(
                     "Forming",
                     value=config["forming"],
                     key=f"form_{idx}",
                     label_visibility="collapsed",
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
                 config["forming"] = forming
 
             with cols[9]:
-                st.markdown(
-                    "<div style='display: flex; justify-content: center; align-items: center; height: 38px'>",
-                    unsafe_allow_html=True,
-                )
                 threading = st.checkbox(
                     "Threading",
                     value=config["threading"],
                     key=f"thread_{idx}",
                     label_visibility="collapsed",
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
                 config["threading"] = threading
 
             with cols[10]:
-                st.markdown(
-                    "<div style='display: flex; justify-content: center; align-items: center; height: 38px'>",
-                    unsafe_allow_html=True,
-                )
                 welding = st.checkbox(
                     "Welding",
                     value=config["welding"],
                     key=f"weld_{idx}",
                     label_visibility="collapsed",
                 )
-                st.markdown("</div>", unsafe_allow_html=True)
                 config["welding"] = welding
 
             with cols[11]:

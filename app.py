@@ -1,6 +1,7 @@
 import streamlit as st  # type: ignore
 import os
 import tempfile
+import glob
 import geometry
 import costs
 import data_loader
@@ -133,6 +134,66 @@ with tab1:
                 )
 
         st.success(f"Added {len(uploaded_files)} file(s)")
+
+    st.divider()
+    col_btn1, col_btn2, _ = st.columns([0.15, 0.15, 0.7])
+    with col_btn1:
+        if st.button("Load Sample Files", use_container_width=True):
+            samples_dir = os.path.join(os.getcwd(), "samples")
+            if os.path.exists(samples_dir):
+                sample_files = glob.glob(
+                    os.path.join(samples_dir, "*.step")
+                ) + glob.glob(os.path.join(samples_dir, "*.stp"))
+
+                added_count = 0
+                for sample_path in sample_files:
+                    file_name = os.path.basename(sample_path)
+                    existing_names = [
+                        f["name"] for f in st.session_state.uploaded_files
+                    ]
+                    if file_name not in existing_names:
+                        # Copy to temp file to maintain consistency with uploader
+                        with tempfile.NamedTemporaryFile(
+                            delete=False, suffix=".step"
+                        ) as tmp:
+                            with open(sample_path, "rb") as sf:
+                                tmp.write(sf.read())
+                            tmp_path = tmp.name
+
+                        st.session_state.uploaded_files.append(
+                            {
+                                "name": file_name,
+                                "path": tmp_path,
+                                "size": os.path.getsize(sample_path),
+                            }
+                        )
+                        added_count += 1
+
+                if added_count > 0:
+                    st.success(f"Added {added_count} sample file(s)")
+                    st.rerun()
+                else:
+                    st.info("Sample files already loaded.")
+            else:
+                st.error("Samples directory not found.")
+
+    with col_btn2:
+        if st.button("Clear All Files", use_container_width=True, type="secondary"):
+            st.session_state.uploaded_files = []
+            st.session_state.part_configs = {}
+            st.session_state.cost_overrides = {}
+            # Also clear cached geometry/thumbnails keys from session state if present
+            keys_to_clear = [
+                k
+                for k in st.session_state.keys()
+                if k.startswith("thumb_")
+                or k.startswith("vol_")
+                or k.startswith("qty_")
+                or k.startswith("cost_qty_")
+            ]
+            for k in keys_to_clear:
+                del st.session_state[k]
+            st.rerun()
 
 
 with tab2:

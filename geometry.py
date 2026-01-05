@@ -1,5 +1,5 @@
 try:
-    import cadquery as cq
+    import cadquery as cq  # type: ignore
 except ImportError as e:
     import sys
 
@@ -8,7 +8,6 @@ except ImportError as e:
     raise e
 import tempfile
 import os
-import trimesh
 
 
 class GeometryAnalyzer:
@@ -24,30 +23,30 @@ class GeometryAnalyzer:
             raise ValueError(f"Failed to load STEP file: {e}")
 
     def get_volume(self):
-        """Returns volume in cm^3 (assuming file is in mm, converts to cm^3)"""
-        # CadQuery usually works in mm. Volume is mm^3.
-        # 1 cm^3 = 1000 mm^3
+        """Returns volume in cubic inches (assuming file is in mm)"""
+        # 1 cubic inch = 16387.064 mm^3
         if self.shape:
-            return self.shape.val().Volume() / 1000.0
+            return self.shape.val().Volume() / 16387.064
         return 0.0
 
     def get_bounding_box(self):
-        """Returns (dx, dy, dz) in mm"""
+        """Returns (dx, dy, dz) in inches (assuming file is in mm)"""
         if self.shape:
             bb = self.shape.val().BoundingBox()
-            return (bb.xlen, bb.ylen, bb.zlen)
+            return (bb.xlen / 25.4, bb.ylen / 25.4, bb.zlen / 25.4)
         return (0.0, 0.0, 0.0)
 
     def get_surface_area(self):
-        """Returns surface area in cm^2"""
+        """Returns surface area in square inches (assuming file is in mm)"""
+        # 1 square inch = 645.16 mm^2
         if self.shape:
-            return self.shape.val().Area() / 100.0
+            return self.shape.val().Area() / 645.16
         return 0.0
 
-    def get_mass(self, density_g_cm3):
-        """Returns mass in grams"""
-        volume_cm3 = self.get_volume()
-        return volume_cm3 * density_g_cm3
+    def get_mass(self, density_lbs_in3):
+        """Returns mass in lbs"""
+        volume_in3 = self.get_volume()
+        return volume_in3 * density_lbs_in3
 
     def export_stl(self):
         """Exports to a temporary STL file for visualization"""
@@ -55,4 +54,40 @@ class GeometryAnalyzer:
             with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as tmp:
                 cq.exporters.export(self.shape, tmp.name)
                 return tmp.name
+        return None
+
+    def get_thumbnail_svg(self):
+        """Generates an SVG thumbnail and returns the content as a string"""
+        if self.shape:
+            # Define the view vector
+            view_vector = (1, -1, 1)
+
+            # Rotate the geometry
+            # we rotate the object around teh view vector
+            angle_degrees = -60
+
+            # rotate the geometry
+            self.shape = self.shape.rotate((0, 0, 0), view_vector, angle_degrees)
+            with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp:
+                cq.exporters.export(
+                    self.shape,
+                    tmp.name,
+                    opt={
+                        "width": 200,
+                        "height": 200,
+                        "marginLeft": 2,
+                        "marginTop": 2,
+                        "showAxes": False,
+                        "projectionDir": view_vector,
+                        "strokeWidth": 1,
+                        "strokeColor": (255, 255, 255),
+                        "hiddenColor": (150, 150, 150),
+                        "showHidden": False,
+                    },
+                )
+                tmp.close()
+                with open(tmp.name, "r") as f:
+                    svg_content = f.read()
+                os.unlink(tmp.name)
+                return svg_content
         return None

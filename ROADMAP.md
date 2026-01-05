@@ -31,6 +31,7 @@ This roadmap outlines the development plan for QuoteForge, divided into three st
 
 - [ ] **Batch Processing Capabilities**
   - Support for multi-file STEP uploads.
+  - Support for zip file uploads of STEP files.
   - Aggregated view for batch totals (total weight, total cost, material requirements).
 - [ ] **Automated Feature Recognition**
   - Implement basic hole detection (count, diameters).
@@ -46,6 +47,8 @@ This roadmap outlines the development plan for QuoteForge, divided into three st
   - Rule-based "Make vs. Buy" logic based on machine capabilities and estimated cost vs. market benchmarks.
 - [ ] **Professional Reporting**
   - Generate PDF quotes using ReportLab or similar, including part thumbnails.
+- [ ] **Unit Selection**
+  - Allow users to select units (metric or imperial) for part specs.
 
 ---
 

@@ -36,7 +36,8 @@ def get_process_rates(process_name):
     if process is not None:
         setup_time_mins = process["setup_time_mins"]
         hourly_rate = process["hourly_rate"]
-        return (setup_time_mins, hourly_rate)
+        run_time_mins = process.get("run_time_mins", 60.0)  # Default to 60 if missing
+        return (setup_time_mins, hourly_rate, run_time_mins)
 
     return None
 

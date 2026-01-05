@@ -518,7 +518,7 @@ with tab3:
 
                 setup_mins = float(p_ovr.get("setup_time_mins", p_info[0]))
                 rate = float(p_ovr.get("rate", p_info[1]))
-                run_mins = float(p_ovr.get("run_time_mins", 60.0))
+                run_mins = float(p_ovr.get("run_time_mins", p_info[2]))
 
                 setup_cost = (setup_mins * rate) / 60.0
                 run_cost_single = (run_mins * rate) / 60.0

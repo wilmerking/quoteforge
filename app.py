@@ -198,6 +198,64 @@ with tab1:
                 del st.session_state[k]
             st.rerun()
 
+    # Sticky Footer (Import Tab Only)
+    st.markdown(
+        """
+        <style>
+        .main-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: transparent;
+            text-align: center;
+            padding-bottom: 20px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .footer-content {
+            pointer-events: auto;
+            background-color: transparent;
+            padding: 10px 0;
+        }
+        .footer-link {
+            text-decoration: none !important; 
+            color: #7c8ba1 !important; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            font-weight: 500; 
+            font-size: 1.1rem; 
+            transition: color 0.2s ease;
+        }
+        .footer-link:hover {
+            color: #5a6a82 !important;
+            text-decoration: none !important;
+        }
+        .footer-subtext {
+            font-size: 0.9rem; 
+            opacity: 0.7; 
+            margin-top: 4px;
+            color: #7c8ba1 !important;
+        }
+        /* Add padding to the bottom of the Import tab specifically */
+        [data-testid="stExpander"] { margin-bottom: 20px; }
+        </style>
+        <div class="main-footer">
+            <div class="footer-content">
+                <hr style="border: none; border-top: 1px solid #e0e6ed; margin-bottom: 24px; width: 40%; margin-left: auto; margin-right: auto; opacity: 0.5;">
+                <a href="https://docs.google.com/spreadsheets/d/1mEu6KlefGKyFToLXYm3bzTt4R-3bY5d-zVEISCLAJWc/edit?gid=624137797#gid=624137797" target="_blank" class="footer-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.8;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                    View Config & Costing Data
+                </a>
+                <div class="footer-subtext">Data provided by New Heights Mfg.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 with tab2:
     st.header("Configuration")

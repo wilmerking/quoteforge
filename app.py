@@ -259,7 +259,8 @@ with tab2:
                             st.session_state[thumb_key] = svg_data
                         # Also cache volume if we already have the analyzer
                         st.session_state[f"vol_{part_number}"] = analyzer.get_volume()
-                    except:
+                    except Exception as e:
+                        st.error(f"Failed to generate thumbnail: {e}")
                         pass
 
                 if thumb_key in st.session_state:

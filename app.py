@@ -12,6 +12,22 @@ print("DEBUG: Costs imported successfully")
 print("DEBUG: Export imported successfully")
 
 st.set_page_config(page_title="QuoteForge", layout="wide")
+st.markdown(
+    """
+    <style>
+    /* Cap the width of number inputs so they don't stretch unnecessarily */
+    div[data-testid="stNumberInput"] {
+        max-width: 150px;
+    }
+    /* Match number input labels to metric labels for consistency */
+    div[data-testid="stNumberInput"] label p {
+        font-size: 0.8rem !important;
+        color: rgba(250, 250, 250, 0.6) !important;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
 
 if "cost_overrides" not in st.session_state:
     st.session_state.cost_overrides = {}
@@ -615,7 +631,7 @@ with tab3:
                 with col_info:
                     st.subheader(display_name)
 
-                    metric_cols = st.columns(4)
+                    metric_cols = st.columns([1, 0.6, 1.2, 1.2])
                     metric_cols[0].metric("Weight", f"{weight_lbs:.2f} lbs")
                     metric_cols[1].number_input(
                         "Quantity",

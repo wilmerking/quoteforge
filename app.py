@@ -186,10 +186,13 @@ with tab1:
             keys_to_clear = [
                 k
                 for k in st.session_state.keys()
-                if k.startswith("thumb_")
-                or k.startswith("vol_")
-                or k.startswith("qty_")
-                or k.startswith("cost_qty_")
+                if isinstance(k, str)
+                and (
+                    k.startswith("thumb_")
+                    or k.startswith("vol_")
+                    or k.startswith("qty_")
+                    or k.startswith("cost_qty_")
+                )
             ]
             for k in keys_to_clear:
                 del st.session_state[k]

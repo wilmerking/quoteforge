@@ -212,14 +212,6 @@ def calculate_part_breakdown(config, volume_in3, overrides=None):
         process_step(config["cutting"])
 
     # Boolean Processes
-    bool_processes = [
-        "Machining",
-        "Turning",
-        "3D Printing",
-        "Forming",
-        "Threading",
-        "Welding",
-    ]
     # Map config keys to process names
     config_map = {
         "machining": "Machining",

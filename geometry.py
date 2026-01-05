@@ -8,7 +8,6 @@ except ImportError as e:
     raise e
 import tempfile
 import os
-import trimesh  # type: ignore
 
 
 class GeometryAnalyzer:

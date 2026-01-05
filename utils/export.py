@@ -1,5 +1,4 @@
 import pandas as pd
-import io  # type: ignore
 import os
 
 

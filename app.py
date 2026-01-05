@@ -609,7 +609,7 @@ with tab4:
                 try:
                     analyzer = geometry.GeometryAnalyzer(file_path)
                     volume_in3 = analyzer.get_volume()
-                except:
+                except:  # noqa: E722
                     pass
 
             # 3. Overrides

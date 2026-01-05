@@ -1,5 +1,6 @@
 import pandas as pd
-import io
+import io  # type: ignore
+import os
 
 
 def generate_csv_export(cost_results, part_name):
@@ -8,7 +9,7 @@ def generate_csv_export(cost_results, part_name):
     """
     # Flatten the dictionary
     data = {
-        "Part Name": [part_name],
+        "Part Name": [cost_results.get("display_name", part_name)],
         "Material Cost ($)": [cost_results["material_cost"]],
         "Processing Cost ($)": [cost_results["processing_cost"]],
         "Total Cost ($)": [cost_results["total_cost"]],
@@ -41,15 +42,14 @@ def generate_batch_export(parts_data):
     """
     rows = []
 
-    # 1. Collect all unique process names across all parts to create stable columns
-    # We want columns like "Process: Laser Cutting ($)"
-    # But maybe it's better to just have generic "Cutting", "Machining" columns?
-    # The requirement is "includes part config data as well as the costing".
-
     for item in parts_data:
-        p_name = item["name"]
+        p_file_name = item["name"]
+        # Use display name (no file extension)
+        p_name = os.path.splitext(p_file_name)[0].replace("_", "-")
         config = item["config"]
         res = item["result"]
+
+        material_cost_total = 0.0
 
         row = {
             "Part Name": p_name,
@@ -57,7 +57,7 @@ def generate_batch_export(parts_data):
             "Material": config.get("material"),
             "Weight (lbs)": res.get("weight_lbs", 0),
             "Per Part Cost ($)": res.get("per_part_cost", 0),
-            "Total Batch Cost ($)": res.get("total_cost_batch", 0),
+            "Total Cost ($)": res.get("total_cost_batch", 0),
             # Config Columns
             "Cutting": config.get("cutting", "None"),
             "Machining": config.get("machining", False),
@@ -69,17 +69,17 @@ def generate_batch_export(parts_data):
             "Finishing": config.get("finishing", "None"),
         }
 
-        # Add cost breakdown columns dynamically?
-        # Or maybe just sum them up by category?
-        # Let's inspect the breakdown list
-        # breakdown is a list of dicts like {"Process": "Laser Cutting", "Batch Total Cost": 123.45}
-
+        # Consolidate material costs and add other process costs
         for entry in res.get("breakdown", []):
             proc_name = entry["Process"]
             cost = entry["Batch Total Cost"]
-            # To keep columns manageable, maybe we prefix?
-            col_key = f"Cost: {proc_name} ($)"
-            row[col_key] = cost
+            if proc_name.startswith("Material:"):
+                material_cost_total += cost
+            else:
+                col_key = f"Cost: {proc_name} ($)"
+                row[col_key] = cost
+
+        row["Material Cost (#)"] = material_cost_total
 
         rows.append(row)
 
@@ -91,8 +91,9 @@ def generate_batch_export(parts_data):
         "Quantity",
         "Material",
         "Weight (lbs)",
+        "Material Cost (#)",
         "Per Part Cost ($)",
-        "Total Batch Cost ($)",
+        "Total Cost ($)",
         "Cutting",
         "Machining",
         "Turning",

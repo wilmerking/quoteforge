@@ -209,9 +209,7 @@ with tab2:
 
         # Create header row with fixed widths (in pixels)
         # Total width: ~1500px to ensure horizontal scroll on smaller screens
-        header_cols = st.columns(
-            [80, 180, 80, 200, 150, 100, 100, 100, 100, 100, 100, 150]
-        )
+        header_cols = st.columns([100, 100, 100, 150, 100, 80, 80, 80, 80, 80, 80, 100])
         header_cols[0].markdown("**Thumbnail**")
         header_cols[1].markdown("**Part Number**")
         header_cols[2].markdown("**Quantity**")
@@ -267,9 +265,7 @@ with tab2:
 
             config = st.session_state.part_configs[part_number]
 
-            cols = st.columns(
-                [80, 180, 80, 200, 150, 100, 100, 100, 100, 100, 100, 150]
-            )
+            cols = st.columns([100, 100, 100, 150, 100, 80, 80, 80, 80, 80, 80, 100])
 
             with cols[0]:
                 # Generate thumbnail and geometry info

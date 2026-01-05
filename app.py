@@ -462,119 +462,18 @@ with tab3:
                     volume_in3 = 0.0
                     st.error(f"Error analyzing {part_number}: {e}")
 
-            # Get material info for weight calculation
-            weight_lbs = 0.0
-            density = 0.0
-            material_cost_per_lb = 0.0
+            # Get manual overrides
+            overrides = st.session_state.cost_overrides.get(part_number, {})
 
-            if material_name:
-                mat_info = costs.get_material_rate(material_name)
-                if mat_info:
-                    density = mat_info[0]
-                    material_cost_per_lb = mat_info[1]
-                    weight_lbs = volume_in3 * density
+            # Calculate detailed costs
+            cost_result = costs.calculate_part_breakdown(config, volume_in3, overrides)
 
-            # Prepare breakdown list for DataFrame
-            cost_details = []
-
-            # Calculate Material Cost with Overrides
-            mat_key = f"Material: {material_name}"
-            mat_ovr = st.session_state.cost_overrides.get(part_number, {}).get(
-                mat_key, {}
-            )
-
-            eff_mat_rate = float(mat_ovr.get("rate", material_cost_per_lb))
-            # Material doesn't use setup/run mins, setting to None/0 for display
-
-            material_cost_single = 0.0
-            material_cost_batch = 0.0
-            if material_name and weight_lbs > 0:
-                material_cost_single = weight_lbs * eff_mat_rate
-                material_cost_batch = material_cost_single * quantity
-
-                cost_details.append(
-                    {
-                        "Process": mat_key,
-                        "Rate": eff_mat_rate,
-                        "Unit": "$/lbs",
-                        "Setup Mins": None,
-                        "Run Mins": None,
-                        "Setup Cost": None,
-                        "Run Cost": None,
-                        "Batch Total Cost": material_cost_batch,
-                    }
-                )
-
-            # Calculate process costs
-            batch_total_process_cost = 0.0
-
-            # Helper for process row addition
-            def add_process_row(p_name, p_info):
-                # Check for overrides
-                p_ovr = st.session_state.cost_overrides.get(part_number, {}).get(
-                    p_name, {}
-                )
-
-                setup_mins = float(p_ovr.get("setup_time_mins", p_info[0]))
-                rate = float(p_ovr.get("rate", p_info[1]))
-                run_mins = float(p_ovr.get("run_time_mins", p_info[2]))
-
-                setup_cost = (setup_mins * rate) / 60.0
-                run_cost_single = (run_mins * rate) / 60.0
-                run_cost_batch = run_cost_single * quantity
-
-                batch_cost = setup_cost + run_cost_batch
-
-                # Return batch cost to add to total
-                cost_details.append(
-                    {
-                        "Process": p_name,
-                        "Rate": rate,
-                        "Unit": "$/hr",
-                        "Setup Mins": setup_mins,
-                        "Run Mins": run_mins,
-                        "Setup Cost": setup_cost,
-                        "Run Cost": run_cost_single,
-                        "Batch Total Cost": batch_cost,
-                    }
-                )
-                return batch_cost
-
-            # Cutting process
-            cutting = config.get("cutting")
-            if cutting:
-                proc_info = costs.get_process_rates(cutting)
-                if proc_info:
-                    batch_total_process_cost += add_process_row(cutting, proc_info)
-
-            # Checkbox processes
-            checkbox_processes = [
-                ("machining", "Machining"),
-                ("turning", "Turning"),
-                ("3d_printing", "3D Printing"),
-                ("forming", "Forming"),
-                ("threading", "Threading"),
-                ("welding", "Welding"),
-            ]
-
-            for config_key, process_name in checkbox_processes:
-                if config.get(config_key, False):
-                    proc_info = costs.get_process_rates(process_name)
-                    if proc_info:
-                        batch_total_process_cost += add_process_row(
-                            process_name, proc_info
-                        )
-
-            # Finishing process
-            finishing = config.get("finishing")
-            if finishing:
-                proc_info = costs.get_process_rates(finishing)
-                if proc_info:
-                    batch_total_process_cost += add_process_row(finishing, proc_info)
-
-            total_cost = material_cost_batch + batch_total_process_cost
-            per_part_cost = total_cost / quantity if quantity > 0 else 0
+            weight_lbs = cost_result["weight_lbs"]
+            per_part_cost = cost_result["per_part_cost"]
+            total_cost = cost_result["total_cost_batch"]
             grand_total += total_cost
+
+            cost_details = cost_result["breakdown"]
 
             # Render Card
             with st.container(border=True):
@@ -683,4 +582,53 @@ with tab3:
 
 with tab4:
     st.header("Export")
-    st.info("Export functionality will be implemented here.")
+
+    if not st.session_state.uploaded_files:
+        st.warning("No files imported.")
+    else:
+        st.write(
+            "Download a detailed CSV containing configuration and cost breakdown for all imported parts."
+        )
+
+        # Prepare data for export
+        export_data = []
+
+        # We need to re-calculate costs (or cache them?)
+        # For safety and latest state, we re-calculate using the shared function
+        for file_info in st.session_state.uploaded_files:
+            part_number = file_info["name"]
+            file_path = file_info["path"]
+
+            # 1. Config
+            config = st.session_state.part_configs.get(part_number, {})
+
+            # 2. Volume (Reuse session state if available, else re-analyze - though Tab 3 logic likely populated it)
+            vol_key = f"vol_{part_number}"
+            volume_in3 = st.session_state.get(vol_key, 0.0)
+            if volume_in3 == 0.0:
+                try:
+                    analyzer = geometry.GeometryAnalyzer(file_path)
+                    volume_in3 = analyzer.get_volume()
+                except:
+                    pass
+
+            # 3. Overrides
+            overrides = st.session_state.cost_overrides.get(part_number, {})
+
+            # Calculate
+            result = costs.calculate_part_breakdown(config, volume_in3, overrides)
+
+            export_data.append(
+                {"name": part_number, "config": config, "result": result}
+            )
+
+        # Generate CSV
+        if export_data:
+            csv_data = export.generate_batch_export(export_data)
+
+            st.download_button(
+                label="Download Batch CSV",
+                data=csv_data,
+                file_name="quoteforge_batch_export.csv",
+                mime="text/csv",
+            )

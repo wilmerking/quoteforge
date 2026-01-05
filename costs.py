@@ -111,3 +111,140 @@ def calculate_part_cost(volume_in3, material_info, process_info, manual_override
             "used_hourly": hourly_rate,
         },
     }
+
+
+def calculate_part_breakdown(config, volume_in3, overrides=None):
+    """
+    Calculates detailed cost breakdown for a part based on its configuration.
+
+    Args:
+        config: Dict containing part configuration (qty, material, processes)
+        volume_in3: Volume in cubic inches
+        overrides: Dict of manual cost overrides
+
+    Returns:
+        Dict containing full cost breakdown, batch totals, and flat fields for export
+    """
+    overrides = overrides or {}
+    quantity = config.get("quantity", 1)
+    material_name = config.get("material")
+
+    # 1. Material Cost
+    weight_lbs = 0.0
+    material_cost_per_lb = 0.0
+    material_cost_batch = 0.0
+    density = 0.0
+
+    if material_name:
+        mat_info = get_material_rate(material_name)
+        if mat_info:
+            density = mat_info[0]
+            material_cost_per_lb = mat_info[1]
+            weight_lbs = volume_in3 * density
+
+    # Material Overrides
+    mat_key = f"Material: {material_name}"
+    mat_ovr = overrides.get(mat_key, {})
+    eff_mat_rate = float(mat_ovr.get("rate", material_cost_per_lb))
+
+    cost_details = []
+
+    if material_name and weight_lbs > 0:
+        material_cost_single = weight_lbs * eff_mat_rate
+        material_cost_batch = material_cost_single * quantity
+
+        cost_details.append(
+            {
+                "Process": mat_key,
+                "Rate": eff_mat_rate,
+                "Unit": "$/lbs",
+                "Setup Mins": None,
+                "Run Mins": None,
+                "Setup Cost": None,
+                "Run Cost": None,
+                "Batch Total Cost": material_cost_batch,
+            }
+        )
+
+    # 2. Process Costs
+    batch_total_process_cost = 0.0
+
+    # helper to process a single process step
+    def process_step(p_name):
+        nonlocal batch_total_process_cost
+
+        # Get base rates
+        p_info = get_process_rates(p_name)
+        # Returns (setup_mins, hourly_rate, run_mins_default)
+        if not p_info:
+            return
+
+        # Check overrides
+        p_ovr = overrides.get(p_name, {})
+
+        setup_mins = float(p_ovr.get("setup_time_mins", p_info[0]))
+        rate = float(p_ovr.get("rate", p_info[1]))
+        run_mins = float(p_ovr.get("run_time_mins", p_info[2]))
+
+        setup_cost = (setup_mins * rate) / 60.0
+        run_cost_single = (run_mins * rate) / 60.0
+        run_cost_batch = run_cost_single * quantity
+
+        batch_cost = setup_cost + run_cost_batch
+
+        batch_total_process_cost += batch_cost
+
+        cost_details.append(
+            {
+                "Process": p_name,
+                "Rate": rate,
+                "Unit": "$/hr",
+                "Setup Mins": setup_mins,
+                "Run Mins": run_mins,
+                "Setup Cost": setup_cost,
+                "Run Cost": run_cost_single,
+                "Batch Total Cost": batch_cost,  # This is the total for the whole batch including ONE setup
+            }
+        )
+
+    # Cutting
+    if config.get("cutting"):
+        process_step(config["cutting"])
+
+    # Boolean Processes
+    bool_processes = [
+        "Machining",
+        "Turning",
+        "3D Printing",
+        "Forming",
+        "Threading",
+        "Welding",
+    ]
+    # Map config keys to process names
+    config_map = {
+        "machining": "Machining",
+        "turning": "Turning",
+        "3d_printing": "3D Printing",
+        "forming": "Forming",
+        "threading": "Threading",
+        "welding": "Welding",
+    }
+
+    for key, p_name in config_map.items():
+        if config.get(key, False):
+            process_step(p_name)
+
+    # Finishing
+    if config.get("finishing"):
+        process_step(config["finishing"])
+
+    total_cost_batch = material_cost_batch + batch_total_process_cost
+    per_part_cost = total_cost_batch / quantity if quantity > 0 else 0.0
+
+    return {
+        "weight_lbs": weight_lbs,
+        "quantity": quantity,
+        "per_part_cost": per_part_cost,
+        "total_cost_batch": total_cost_batch,
+        "breakdown": cost_details,
+    }

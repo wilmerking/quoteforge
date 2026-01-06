@@ -155,8 +155,6 @@ with st.sidebar:
         help="Select the display units for measurements and inputs. Source data remains in Imperial.",
     )
 
-    st.info("Configuration options will appear here.")
-
 # Placeholder for main content
 tab1, tab2, tab3, tab4 = st.tabs(["Import", "Configuration", "Costing", "Export"])
 

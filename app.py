@@ -337,7 +337,7 @@ with tab2:
                 part_number = file_info["name"]
                 st.session_state.part_configs[part_number] = {
                     "quantity": 1,
-                    "material": None,
+                    "material": "Steel ASTM A36",
                     "cutting": None,
                     "machining": False,
                     "turning": False,
@@ -367,6 +367,35 @@ with tab2:
         ].tolist()
 
         material_names = materials_df["name"].tolist()
+
+        if "priority" in materials_df.columns:
+            priority_materials = materials_df[materials_df["priority"] == True][
+                "name"
+            ].tolist()
+            regular_materials = materials_df[materials_df["priority"] == False][
+                "name"
+            ].tolist()
+
+            # Sort lists
+            priority_materials.sort()
+            regular_materials.sort()
+
+            # Ensure Steel ASTM A36 is at the top of priority list
+            a36_name = "Steel ASTM A36"
+            if a36_name in priority_materials:
+                priority_materials.remove(a36_name)
+                priority_materials.insert(0, a36_name)
+            elif a36_name in regular_materials:  # Fallback if data changes
+                regular_materials.remove(a36_name)
+                priority_materials.insert(0, a36_name)
+
+            # Combine with separator
+            material_options = (
+                priority_materials + ["────────────────────"] + regular_materials
+            )
+        else:
+            material_names.sort()
+            material_options = material_names
 
         # Add custom CSS for horizontal scroll with minimum width
         st.markdown(
@@ -443,7 +472,7 @@ with tab2:
             if part_number not in st.session_state.part_configs:
                 st.session_state.part_configs[part_number] = {
                     "quantity": 1,
-                    "material": None,
+                    "material": "Steel ASTM A36",
                     "cutting": None,
                     "machining": False,
                     "turning": False,
@@ -507,19 +536,35 @@ with tab2:
                 )
 
             with cols[3]:
-                material_index = (
-                    material_names.index(config["material"])
-                    if config["material"] in material_names
-                    else 0
-                )
+                # Handle case where current material is not in options (e.g. invalid or None)
+                current_mat = config.get("material")
+                if current_mat not in material_options:
+                    # Default to A36 if available, else first option
+                    default_mat = "Steel ASTM A36"
+                    current_mat = (
+                        default_mat
+                        if default_mat in material_options
+                        else material_options[0]
+                    )
+                    # Update config immediately to ensure consistency
+                    config["material"] = current_mat
+
+                material_index = material_options.index(current_mat)
+
                 material = st.selectbox(
                     "Material",
-                    options=material_names,
+                    options=material_options,
                     index=material_index,
                     key=f"mat_{idx}",
                     label_visibility="collapsed",
                 )
-                config["material"] = material
+
+                # Check for separator selection
+                if "──" in material:
+                    st.warning("Please select a valid material")
+                    # Don't update config with separator
+                else:
+                    config["material"] = material
 
             with cols[4]:
                 cutting_options = ["None"] + cutting_processes

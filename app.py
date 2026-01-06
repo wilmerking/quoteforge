@@ -372,9 +372,8 @@ with tab2:
             priority_materials = materials_df[materials_df["priority"] == True][
                 "name"
             ].tolist()
-            regular_materials = materials_df[materials_df["priority"] == False][
-                "name"
-            ].tolist()
+            # "regular" list now includes ALL materials for the main dropdown section
+            regular_materials = materials_df["name"].tolist()
 
             # Sort lists
             priority_materials.sort()
@@ -384,9 +383,6 @@ with tab2:
             a36_name = "Steel ASTM A36"
             if a36_name in priority_materials:
                 priority_materials.remove(a36_name)
-                priority_materials.insert(0, a36_name)
-            elif a36_name in regular_materials:  # Fallback if data changes
-                regular_materials.remove(a36_name)
                 priority_materials.insert(0, a36_name)
 
             # Combine with separator

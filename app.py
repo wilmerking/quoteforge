@@ -25,6 +25,19 @@ st.markdown(
         font-size: 0.8rem !important;
         color: rgba(250, 250, 250, 0.6) !important;
     }
+    /* Make Tab headers larger */
+    button[data-baseweb="tab"] p {
+        font-size: 1.2rem !important;
+        font-weight: 500 !important;
+    }
+    /* Set selected tab text color */
+    button[data-baseweb="tab"][aria-selected="true"] p {
+        color: #EA7600 !important;
+    }
+    /* Set tab underline color */
+    div[data-baseweb="tab-highlight"] {
+        background-color: #EA7600 !important;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -103,7 +116,10 @@ def update_quantity(part_number, key, other_key):
             st.session_state[other_key] = new_qty
 
 
-st.title("QuoteForge")
+st.markdown(
+    "<h1><span style='font-weight:700; color:#EA7600'>Quote</span><span style='font-weight:400'>Forge</span></h1>",
+    unsafe_allow_html=True,
+)
 
 # Placeholder for sidebar
 with st.sidebar:
@@ -260,7 +276,7 @@ with tab1:
             transition: color 0.2s ease;
         }
         .footer-link:hover {
-            color: #5a6a82 !important;
+            color: #EA7600 !important;
             text-decoration: none !important;
         }
         .footer-subtext {

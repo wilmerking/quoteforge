@@ -8,11 +8,12 @@ import data_loader
 import pandas as pd  # type: ignore
 from utils import export
 
+st.set_page_config(page_title="QuoteForge", page_icon="⚙️", layout="wide")
+
 print("DEBUG: Geometry imported successfully")
 print("DEBUG: Costs imported successfully")
 print("DEBUG: Export imported successfully")
 
-st.set_page_config(page_title="QuoteForge", layout="wide")
 st.markdown(
     """
     <style>

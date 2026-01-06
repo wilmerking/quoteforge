@@ -9,3 +9,4 @@ reportlab
 lxml
 tinycss2
 cssselect2
+svglib

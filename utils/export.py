@@ -159,11 +159,18 @@ def generate_pdf_export(parts_data):
     styles = getSampleStyleSheet()
     title_style = styles["Title"]
     h2_style = styles["Heading2"]
+    h2_style.spaceAfter = 5
+    h2_style.spaceBefore = 10
+
+    h3_style = styles["Heading3"]
+    h3_style.spaceAfter = 2
+    h3_style.spaceBefore = 5
+
     normal_style = styles["Normal"]
 
     # Report Title
     story.append(Paragraph("QuoteForge Part Report", title_style))
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 10))
 
     for item in parts_data:
         p_file_name = item["name"]
@@ -174,7 +181,7 @@ def generate_pdf_export(parts_data):
 
         # Part Header
         story.append(Paragraph(f"Part: {p_name}", h2_style))
-        story.append(Spacer(1, 10))
+        story.append(Spacer(1, 2))
 
         # --- Top Section: Thumbnail + Specs ---
 
@@ -182,6 +189,17 @@ def generate_pdf_export(parts_data):
         drawing = None
         if svg_content:
             try:
+                # Ensure the thumbnail is visible on white PDF background by changing white stroke to black
+                svg_content = svg_content.replace(
+                    'stroke="rgb(255,255,255)"', 'stroke="rgb(0,0,0)"'
+                )
+                svg_content = svg_content.replace(
+                    'stroke="#ffffff"', 'stroke="#000000"'
+                )
+                svg_content = svg_content.replace(
+                    'stroke="#FFFFFF"', 'stroke="#000000"'
+                )
+
                 # svglib needs a file path
                 with tempfile.NamedTemporaryFile(
                     delete=False, suffix=".svg", mode="w"
@@ -238,7 +256,7 @@ def generate_pdf_export(parts_data):
             top_layout.setStyle(
                 TableStyle(
                     [
-                        ("VALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
                         ("ALIGN", (0, 0), (0, 0), "CENTER"),  # Center image
                     ]
                 )
@@ -247,11 +265,11 @@ def generate_pdf_export(parts_data):
         else:
             story.append(specs_table)
 
-        story.append(Spacer(1, 20))
+        story.append(Spacer(1, 5))
 
         # --- Bottom Section: Cost Breakdown ---
-        story.append(Paragraph("Cost Breakdown", styles["Heading3"]))
-        story.append(Spacer(1, 10))
+        story.append(Paragraph("Cost Breakdown", h3_style))
+        # (Spacer removed as style has spaceBefore/spaceAfter)
 
         breakdown_list = res.get("breakdown", [])
         if breakdown_list:

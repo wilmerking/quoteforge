@@ -34,9 +34,23 @@ st.markdown(
     button[data-baseweb="tab"][aria-selected="true"] p {
         color: #EA7600 !important;
     }
+    /* Set tab hover text color */
+    button[data-baseweb="tab"]:hover p {
+        color: #EA7600 !important;
+    }
     /* Set tab underline color */
     div[data-baseweb="tab-highlight"] {
         background-color: #EA7600 !important;
+    }
+    /* Reduce top padding further to keep content high while keeping header */
+    .block-container {
+        padding-top: 3.5rem !important;
+        padding-bottom: 0rem !important;
+    }
+    /* Move title up slightly within the container */
+    h1 {
+        margin-top: -1rem !important;
+        padding-top: 0 !important;
     }
     </style>
 """,

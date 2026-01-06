@@ -2,20 +2,17 @@ import pandas as pd
 import os
 import tempfile
 import io
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import (
+from reportlab.lib import colors  # type: ignore
+from reportlab.lib.pagesizes import letter  # type: ignore
+from reportlab.lib.styles import getSampleStyleSheet  # type: ignore
+from reportlab.platypus import (  # type: ignore
     SimpleDocTemplate,
     Paragraph,
     Spacer,
     Table,
     TableStyle,
-    KeepTogether,
-    Image as RLImage,
 )
-from reportlab.graphics import renderPDF
-from svglib.svglib import svg2rlg
+from svglib.svglib import svg2rlg  # type: ignore
 
 
 def generate_csv_export(cost_results, part_name):

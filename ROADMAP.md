@@ -45,7 +45,7 @@ This roadmap outlines the development plan for QuoteForge, divided into three st
   - Highlight detected features (like holes or bends) in the 3D view.
 - [ ] **Intelligent Recommendations**
   - Rule-based "Make vs. Buy" logic based on machine capabilities and estimated cost vs. market benchmarks.
-- [ ] **Professional Reporting**
+- [x] **Professional Reporting**
   - Generate PDF quotes using ReportLab or similar, including part thumbnails.
 - [ ] **Unit Selection**
   - Allow users to select units (metric or imperial) for part specs.

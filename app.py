@@ -8,11 +8,12 @@ import data_loader
 import pandas as pd  # type: ignore
 from utils import export
 
+st.set_page_config(page_title="QuoteForge", page_icon="⚙️", layout="wide")
+
 print("DEBUG: Geometry imported successfully")
 print("DEBUG: Costs imported successfully")
 print("DEBUG: Export imported successfully")
 
-st.set_page_config(page_title="QuoteForge", layout="wide")
 st.markdown(
     """
     <style>
@@ -24,6 +25,39 @@ st.markdown(
     div[data-testid="stNumberInput"] label p {
         font-size: 0.8rem !important;
         color: rgba(250, 250, 250, 0.6) !important;
+    }
+    /* Make Tab headers larger */
+    button[data-baseweb="tab"] p {
+        font-size: 1.2rem !important;
+        font-weight: 500 !important;
+    }
+    /* Set selected tab text color */
+    button[data-baseweb="tab"][aria-selected="true"] p {
+        color: #EA7600 !important;
+    }
+    /* Set tab hover text color */
+    button[data-baseweb="tab"]:hover p {
+        color: #EA7600 !important;
+    }
+    /* Set tab underline color */
+    div[data-baseweb="tab-highlight"] {
+        background-color: #EA7600 !important;
+    }
+    /* Reduce top padding further to keep content high while keeping header */
+    .block-container {
+        padding-top: 3.5rem !important;
+        padding-bottom: 0rem !important;
+    }
+    /* Move title up slightly within the container */
+    h1 {
+        margin-top: -1rem !important;
+        padding-top: 0 !important;
+    }
+    /* Make white-stroke SVGs visible on any background by using difference blend mode */
+    .thumbnail-img {
+        mix-blend-mode: difference;
+        max-width: 100%;
+        height: auto;
     }
     </style>
 """,
@@ -72,6 +106,21 @@ def update_cost_overrides(part_number, key, df_ref):
         for col_name, new_val in row_changes.items():
             if col_name in col_map:
                 override_key = col_map[col_name]
+                if (
+                    override_key == "rate"
+                    and st.session_state.get("units_selection") == "Metric"
+                ):
+                    # Check if this process uses mass-based units ($/lbs -> $/kg)
+                    # Simple heuristic: Material rows usually have "Material:" prefix
+                    # We can also check the unit column in the original dataframe row
+                    # But edited_rows doesn't give us the original row easily without lookup.
+                    # We can look up the unit in df_ref
+                    unit_val = df_ref.iloc[idx]["Unit"]
+                    if unit_val == "$/kg":  # It was displayed as $/kg
+                        # Convert $/kg back to $/lb
+                        # 1 $/kg = 1 / 2.20462 $/lb
+                        new_val = new_val / 2.20462
+
                 st.session_state.cost_overrides[part_number][process_key][
                     override_key
                 ] = new_val
@@ -88,11 +137,24 @@ def update_quantity(part_number, key, other_key):
             st.session_state[other_key] = new_qty
 
 
-st.title("QuoteForge")
+st.markdown(
+    "<h1><span style='font-weight:700; color:#EA7600'>Quote</span><span style='font-weight:400'>Forge</span></h1>",
+    unsafe_allow_html=True,
+)
 
 # Placeholder for sidebar
 with st.sidebar:
     st.header("Settings")
+
+    # Unit Selection
+    st.radio(
+        "Units",
+        options=["Imperial", "Metric"],
+        index=0,
+        key="units_selection",
+        help="Select the display units for measurements and inputs. Source data remains in Imperial.",
+    )
+
     st.info("Configuration options will appear here.")
 
 # Placeholder for main content
@@ -196,6 +258,11 @@ with tab1:
             ]
             for k in keys_to_clear:
                 del st.session_state[k]
+
+            # Clear generated PDF
+            if "pdf_generated_data" in st.session_state:
+                del st.session_state["pdf_generated_data"]
+
             st.rerun()
 
     # Sticky Footer (Import Tab Only)
@@ -230,7 +297,7 @@ with tab1:
             transition: color 0.2s ease;
         }
         .footer-link:hover {
-            color: #5a6a82 !important;
+            color: #EA7600 !important;
             text-decoration: none !important;
         }
         .footer-subtext {
@@ -270,7 +337,7 @@ with tab2:
                 part_number = file_info["name"]
                 st.session_state.part_configs[part_number] = {
                     "quantity": 1,
-                    "material": None,
+                    "material": "Steel ASTM A36",
                     "cutting": None,
                     "machining": False,
                     "turning": False,
@@ -300,6 +367,29 @@ with tab2:
         ].tolist()
 
         material_names = materials_df["name"].tolist()
+
+        if "priority" in materials_df.columns:
+            priority_materials = materials_df[materials_df["priority"]]["name"].tolist()
+            # "regular" list now includes ALL materials for the main dropdown section
+            regular_materials = materials_df["name"].tolist()
+
+            # Sort lists
+            priority_materials.sort()
+            regular_materials.sort()
+
+            # Ensure Steel ASTM A36 is at the top of priority list
+            a36_name = "Steel ASTM A36"
+            if a36_name in priority_materials:
+                priority_materials.remove(a36_name)
+                priority_materials.insert(0, a36_name)
+
+            # Combine with separator
+            material_options = (
+                priority_materials + ["────────────────────"] + regular_materials
+            )
+        else:
+            material_names.sort()
+            material_options = material_names
 
         # Add custom CSS for horizontal scroll with minimum width
         st.markdown(
@@ -376,7 +466,7 @@ with tab2:
             if part_number not in st.session_state.part_configs:
                 st.session_state.part_configs[part_number] = {
                     "quantity": 1,
-                    "material": None,
+                    "material": "Steel ASTM A36",
                     "cutting": None,
                     "machining": False,
                     "turning": False,
@@ -419,7 +509,7 @@ with tab2:
                     svg_data = st.session_state[thumb_key]
                     b64_svg = base64.b64encode(svg_data.encode("utf-8")).decode("utf-8")
                     st.markdown(
-                        f'<img src="data:image/svg+xml;base64,{b64_svg}" style="max-width: 100%; height: auto;"/>',
+                        f'<img src="data:image/svg+xml;base64,{b64_svg}" class="thumbnail-img"/>',
                         unsafe_allow_html=True,
                     )
                 else:
@@ -440,19 +530,35 @@ with tab2:
                 )
 
             with cols[3]:
-                material_index = (
-                    material_names.index(config["material"])
-                    if config["material"] in material_names
-                    else 0
-                )
+                # Handle case where current material is not in options (e.g. invalid or None)
+                current_mat = config.get("material")
+                if current_mat not in material_options:
+                    # Default to A36 if available, else first option
+                    default_mat = "Steel ASTM A36"
+                    current_mat = (
+                        default_mat
+                        if default_mat in material_options
+                        else material_options[0]
+                    )
+                    # Update config immediately to ensure consistency
+                    config["material"] = current_mat
+
+                material_index = material_options.index(current_mat)
+
                 material = st.selectbox(
                     "Material",
-                    options=material_names,
+                    options=material_options,
                     index=material_index,
                     key=f"mat_{idx}",
                     label_visibility="collapsed",
                 )
-                config["material"] = material
+
+                # Check for separator selection
+                if "──" in material:
+                    st.warning("Please select a valid material")
+                    # Don't update config with separator
+                else:
+                    config["material"] = material
 
             with cols[4]:
                 cutting_options = ["None"] + cutting_processes
@@ -595,7 +701,29 @@ with tab3:
             total_cost = cost_result["total_cost_batch"]
             grand_total += total_cost
 
-            cost_details = cost_result["breakdown"]
+            raw_details = cost_result["breakdown"]
+            cost_details = []
+
+            is_metric = st.session_state.get("units_selection") == "Metric"
+
+            if is_metric:
+                # Conversion Constants
+                LBS_TO_KG = 0.453592
+                LB_TO_KG_PRICE = 2.20462
+
+                weight_display = weight_lbs * LBS_TO_KG
+                weight_unit = "kg"
+
+                for item in raw_details:
+                    new_item = item.copy()
+                    if new_item.get("Unit") == "$/lbs":
+                        new_item["Rate"] = new_item["Rate"] * LB_TO_KG_PRICE
+                        new_item["Unit"] = "$/kg"
+                    cost_details.append(new_item)
+            else:
+                weight_display = weight_lbs
+                weight_unit = "lbs"
+                cost_details = raw_details
 
             # Render Card
             with st.container(border=True):
@@ -613,7 +741,7 @@ with tab3:
                             "utf-8"
                         )
                         st.markdown(
-                            f'<img src="data:image/svg+xml;base64,{b64_svg}" style="max-width: 100%; height: auto;"/>',
+                            f'<img src="data:image/svg+xml;base64,{b64_svg}" class="thumbnail-img"/>',
                             unsafe_allow_html=True,
                         )
                     else:
@@ -624,7 +752,9 @@ with tab3:
                     st.subheader(display_name)
 
                     metric_cols = st.columns([1, 0.6, 1.2, 1.2])
-                    metric_cols[0].metric("Weight", f"{weight_lbs:.2f} lbs")
+                    metric_cols[0].metric(
+                        "Weight", f"{weight_display:.2f} {weight_unit}"
+                    )
                     metric_cols[1].number_input(
                         "Quantity",
                         min_value=1,
@@ -709,8 +839,10 @@ with tab4:
         st.warning("No files imported.")
     else:
         st.write(
-            "Download a detailed CSV containing configuration and cost breakdown for all imported parts."
+            "Download a detailed report containing configuration and cost breakdown for all imported parts."
         )
+
+        export_type = st.radio("Export Format", ["CSV", "PDF"], horizontal=True)
 
         # Prepare data for export
         export_data = []
@@ -737,20 +869,51 @@ with tab4:
             # 3. Overrides
             overrides = st.session_state.cost_overrides.get(part_number, {})
 
+            # 4. Thumbnail SVG (for PDF)
+            thumb_key = f"thumb_v2_{part_number}"
+            thumbnail_svg = st.session_state.get(thumb_key)
+
             # Calculate
             result = costs.calculate_part_breakdown(config, volume_in3, overrides)
 
             export_data.append(
-                {"name": part_number, "config": config, "result": result}
+                {
+                    "name": part_number,
+                    "config": config,
+                    "result": result,
+                    "thumbnail_svg": thumbnail_svg,
+                }
             )
 
-        # Generate CSV
+        # Generate Export
         if export_data:
-            csv_data = export.generate_batch_export(export_data)
+            if export_type == "CSV":
+                units = st.session_state.get("units_selection", "Imperial")
+                csv_data = export.generate_batch_export(export_data, units=units)
+                st.download_button(
+                    label="Download Batch CSV",
+                    data=csv_data,
+                    file_name="quoteforge_batch_export.csv",
+                    mime="text/csv",
+                )
+            else:
+                # PDF Export
+                if st.button("Generate PDF Report"):
+                    with st.spinner("Generating PDF..."):
+                        try:
+                            units = st.session_state.get("units_selection", "Imperial")
+                            pdf_data = export.generate_pdf_export(
+                                export_data, units=units
+                            )
+                            st.session_state["pdf_generated_data"] = pdf_data
+                            st.success("PDF Generated!")
+                        except Exception as e:
+                            st.error(f"Failed to generate PDF: {e}")
 
-            st.download_button(
-                label="Download Batch CSV",
-                data=csv_data,
-                file_name="quoteforge_batch_export.csv",
-                mime="text/csv",
-            )
+                if "pdf_generated_data" in st.session_state:
+                    st.download_button(
+                        label="Download PDF Report",
+                        data=st.session_state["pdf_generated_data"],
+                        file_name="quoteforge_report.pdf",
+                        mime="application/pdf",
+                    )

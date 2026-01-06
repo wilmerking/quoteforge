@@ -52,6 +52,12 @@ st.markdown(
         margin-top: -1rem !important;
         padding-top: 0 !important;
     }
+    /* Make white-stroke SVGs visible on any background by using difference blend mode */
+    .thumbnail-img {
+        mix-blend-mode: difference;
+        max-width: 100%;
+        height: auto;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -479,7 +485,7 @@ with tab2:
                     svg_data = st.session_state[thumb_key]
                     b64_svg = base64.b64encode(svg_data.encode("utf-8")).decode("utf-8")
                     st.markdown(
-                        f'<img src="data:image/svg+xml;base64,{b64_svg}" style="max-width: 100%; height: auto;"/>',
+                        f'<img src="data:image/svg+xml;base64,{b64_svg}" class="thumbnail-img"/>',
                         unsafe_allow_html=True,
                     )
                 else:
@@ -698,7 +704,7 @@ with tab3:
                             "utf-8"
                         )
                         st.markdown(
-                            f'<img src="data:image/svg+xml;base64,{b64_svg}" style="max-width: 100%; height: auto;"/>',
+                            f'<img src="data:image/svg+xml;base64,{b64_svg}" class="thumbnail-img"/>',
                             unsafe_allow_html=True,
                         )
                     else:

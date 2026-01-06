@@ -47,7 +47,7 @@ This roadmap outlines the development plan for QuoteForge, divided into three st
   - Rule-based "Make vs. Buy" logic based on machine capabilities and estimated cost vs. market benchmarks.
 - [x] **Professional Reporting**
   - Generate PDF quotes using ReportLab or similar, including part thumbnails.
-- [ ] **Unit Selection**
+- [x] **Unit Selection**
   - Allow users to select units (metric or imperial) for part specs.
 
 ---

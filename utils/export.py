@@ -39,7 +39,7 @@ def generate_csv_export(cost_results, part_name):
     return df.to_csv(index=False)
 
 
-def generate_batch_export(parts_data):
+def generate_batch_export(parts_data, units="Imperial"):
     """
     Generates a CSV string for a batch of parts.
 
@@ -63,23 +63,48 @@ def generate_batch_export(parts_data):
 
         material_cost_total = 0.0
 
-        row = {
-            "Part Name": p_name,
-            "Quantity": config.get("quantity", 1),
-            "Material": config.get("material"),
-            "Weight (lbs)": res.get("weight_lbs", 0),
-            "Per Part Cost ($)": res.get("per_part_cost", 0),
-            "Total Cost ($)": res.get("total_cost_batch", 0),
-            # Config Columns
-            "Cutting": config.get("cutting", "None"),
-            "Machining": config.get("machining", False),
-            "Turning": config.get("turning", False),
-            "3D Printing": config.get("3d_printing", False),
-            "Forming": config.get("forming", False),
-            "Threading": config.get("threading", False),
-            "Welding": config.get("welding", False),
-            "Finishing": config.get("finishing", "None"),
-        }
+        if units == "Metric":
+            # Conversion factors
+            LBS_TO_KG = 0.453592
+            LB_TO_KG_PRICE = 2.20462  # 1 $/lb = 2.20462 $/kg
+
+            weight_val = res.get("weight_lbs", 0) * LBS_TO_KG
+
+            row = {
+                "Part Name": p_name,
+                "Quantity": config.get("quantity", 1),
+                "Material": config.get("material"),
+                "Weight (kg)": weight_val,
+                "Per Part Cost ($)": res.get("per_part_cost", 0),
+                "Total Cost ($)": res.get("total_cost_batch", 0),
+                # Config Columns
+                "Cutting": config.get("cutting", "None"),
+                "Machining": config.get("machining", False),
+                "Turning": config.get("turning", False),
+                "3D Printing": config.get("3d_printing", False),
+                "Forming": config.get("forming", False),
+                "Threading": config.get("threading", False),
+                "Welding": config.get("welding", False),
+                "Finishing": config.get("finishing", "None"),
+            }
+        else:
+            row = {
+                "Part Name": p_name,
+                "Quantity": config.get("quantity", 1),
+                "Material": config.get("material"),
+                "Weight (lbs)": res.get("weight_lbs", 0),
+                "Per Part Cost ($)": res.get("per_part_cost", 0),
+                "Total Cost ($)": res.get("total_cost_batch", 0),
+                # Config Columns
+                "Cutting": config.get("cutting", "None"),
+                "Machining": config.get("machining", False),
+                "Turning": config.get("turning", False),
+                "3D Printing": config.get("3d_printing", False),
+                "Forming": config.get("forming", False),
+                "Threading": config.get("threading", False),
+                "Welding": config.get("welding", False),
+                "Finishing": config.get("finishing", "None"),
+            }
 
         # Consolidate material costs and add other process costs
         for entry in res.get("breakdown", []):
@@ -88,6 +113,21 @@ def generate_batch_export(parts_data):
             if proc_name.startswith("Material:"):
                 material_cost_total += cost
             else:
+                if units == "Metric" and entry.get("Unit") == "$/lbs":
+                    # Convert Material Cost Rate
+                    # Wait, entry["Rate"] is base Imperial ($/lb).
+                    # Need to check original Unit from the cost result?
+                    # costs.py calculates and returns breakdown.
+                    # But the result passed here is straight from costs.py which is Imperial.
+                    # So we convert here.
+                    cost = entry[
+                        "Batch Total Cost"
+                    ]  # Total cost ($) doesn't change with units
+
+                # However, if we want to show rates in a breakdown column, we are flattening here.
+                # The current code puts "Cost: <Process>" -> Total Cost.
+                # So we don't need to convert Rate for these flattened columns.
+
                 col_key = f"Cost: {proc_name} ($)"
                 row[col_key] = cost
 
@@ -98,23 +138,42 @@ def generate_batch_export(parts_data):
     df = pd.DataFrame(rows)
 
     # Reorder columns to put standard ones first
-    base_cols = [
-        "Part Name",
-        "Quantity",
-        "Material",
-        "Weight (lbs)",
-        "Material Cost (#)",
-        "Per Part Cost ($)",
-        "Total Cost ($)",
-        "Cutting",
-        "Machining",
-        "Turning",
-        "3D Printing",
-        "Forming",
-        "Threading",
-        "Welding",
-        "Finishing",
-    ]
+    if units == "Metric":
+        base_cols = [
+            "Part Name",
+            "Quantity",
+            "Material",
+            "Weight (kg)",
+            "Material Cost (#)",
+            "Per Part Cost ($)",
+            "Total Cost ($)",
+            "Cutting",
+            "Machining",
+            "Turning",
+            "3D Printing",
+            "Forming",
+            "Threading",
+            "Welding",
+            "Finishing",
+        ]
+    else:
+        base_cols = [
+            "Part Name",
+            "Quantity",
+            "Material",
+            "Weight (lbs)",
+            "Material Cost (#)",
+            "Per Part Cost ($)",
+            "Total Cost ($)",
+            "Cutting",
+            "Machining",
+            "Turning",
+            "3D Printing",
+            "Forming",
+            "Threading",
+            "Welding",
+            "Finishing",
+        ]
 
     # Identify dynamic cost columns
     existing_cols = list(df.columns)
@@ -132,7 +191,7 @@ def generate_batch_export(parts_data):
     return df.to_csv(index=False)
 
 
-def generate_pdf_export(parts_data):
+def generate_pdf_export(parts_data, units="Imperial"):
     """
     Generates a PDF report for a batch of parts.
 
@@ -220,13 +279,25 @@ def generate_pdf_export(parts_data):
 
         # 2. Prepare Specs Table
         # Data for specs
-        specs_data = [
-            ["Quantity:", str(config.get("quantity", 1))],
-            ["Material:", str(config.get("material", "-"))],
-            ["Weight:", f"{res.get('weight_lbs', 0):.2f} lbs"],
-            ["Per Part Cost:", f"${res.get('per_part_cost', 0):.2f}"],
-            ["Total Cost:", f"${res.get('total_cost_batch', 0):.2f}"],
-        ]
+        # 2. Prepare Specs Table
+        if units == "Metric":
+            LBS_TO_KG = 0.453592
+            weight_val = res.get("weight_lbs", 0) * LBS_TO_KG
+            specs_data = [
+                ["Quantity:", str(config.get("quantity", 1))],
+                ["Material:", str(config.get("material", "-"))],
+                ["Weight:", f"{weight_val:.2f} kg"],
+                ["Per Part Cost:", f"${res.get('per_part_cost', 0):.2f}"],
+                ["Total Cost:", f"${res.get('total_cost_batch', 0):.2f}"],
+            ]
+        else:
+            specs_data = [
+                ["Quantity:", str(config.get("quantity", 1))],
+                ["Material:", str(config.get("material", "-"))],
+                ["Weight:", f"{res.get('weight_lbs', 0):.2f} lbs"],
+                ["Per Part Cost:", f"${res.get('per_part_cost', 0):.2f}"],
+                ["Total Cost:", f"${res.get('total_cost_batch', 0):.2f}"],
+            ]
 
         specs_table = Table(specs_data, colWidths=[100, 150])
         specs_table.setStyle(
@@ -284,10 +355,18 @@ def generate_pdf_export(parts_data):
             ]
 
             for row in breakdown_list:
+                rate = row.get("Rate", 0)
+                unit_str = row.get("Unit", "").lower()
+
+                if units == "Metric" and "lbs" in unit_str:
+                    # Convert $/lb to $/kg
+                    LB_TO_KG_PRICE = 2.20462
+                    rate = rate * LB_TO_KG_PRICE
+
                 table_data.append(
                     [
                         row.get("Process", ""),
-                        f"{row.get('Rate', 0):.2f}",
+                        f"{rate:.2f}",
                         f"{row.get('Setup Mins', 0):.1f}"
                         if row.get("Setup Mins") is not None
                         else "-",

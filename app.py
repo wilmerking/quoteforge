@@ -72,6 +72,21 @@ def update_cost_overrides(part_number, key, df_ref):
         for col_name, new_val in row_changes.items():
             if col_name in col_map:
                 override_key = col_map[col_name]
+                if (
+                    override_key == "rate"
+                    and st.session_state.get("units_selection") == "Metric"
+                ):
+                    # Check if this process uses mass-based units ($/lbs -> $/kg)
+                    # Simple heuristic: Material rows usually have "Material:" prefix
+                    # We can also check the unit column in the original dataframe row
+                    # But edited_rows doesn't give us the original row easily without lookup.
+                    # We can look up the unit in df_ref
+                    unit_val = df_ref.iloc[idx]["Unit"]
+                    if unit_val == "$/kg":  # It was displayed as $/kg
+                        # Convert $/kg back to $/lb
+                        # 1 $/kg = 1 / 2.20462 $/lb
+                        new_val = new_val / 2.20462
+
                 st.session_state.cost_overrides[part_number][process_key][
                     override_key
                 ] = new_val
@@ -93,6 +108,16 @@ st.title("QuoteForge")
 # Placeholder for sidebar
 with st.sidebar:
     st.header("Settings")
+
+    # Unit Selection
+    st.radio(
+        "Units",
+        options=["Imperial", "Metric"],
+        index=0,
+        key="units_selection",
+        help="Select the display units for measurements and inputs. Source data remains in Imperial.",
+    )
+
     st.info("Configuration options will appear here.")
 
 # Placeholder for main content
@@ -600,7 +625,32 @@ with tab3:
             total_cost = cost_result["total_cost_batch"]
             grand_total += total_cost
 
-            cost_details = cost_result["breakdown"]
+            cost_details = []
+            # Deep copy or construct new list for display to handle unit conversion without mutating original result
+            import copy
+
+            raw_details = cost_result["breakdown"]
+
+            is_metric = st.session_state.get("units_selection") == "Metric"
+
+            if is_metric:
+                # Conversion Constants
+                LBS_TO_KG = 0.453592
+                LB_TO_KG_PRICE = 2.20462
+
+                weight_display = weight_lbs * LBS_TO_KG
+                weight_unit = "kg"
+
+                for item in raw_details:
+                    new_item = item.copy()
+                    if new_item.get("Unit") == "$/lbs":
+                        new_item["Rate"] = new_item["Rate"] * LB_TO_KG_PRICE
+                        new_item["Unit"] = "$/kg"
+                    cost_details.append(new_item)
+            else:
+                weight_display = weight_lbs
+                weight_unit = "lbs"
+                cost_details = raw_details
 
             # Render Card
             with st.container(border=True):
@@ -629,7 +679,9 @@ with tab3:
                     st.subheader(display_name)
 
                     metric_cols = st.columns([1, 0.6, 1.2, 1.2])
-                    metric_cols[0].metric("Weight", f"{weight_lbs:.2f} lbs")
+                    metric_cols[0].metric(
+                        "Weight", f"{weight_display:.2f} {weight_unit}"
+                    )
                     metric_cols[1].number_input(
                         "Quantity",
                         min_value=1,
@@ -763,7 +815,8 @@ with tab4:
         # Generate Export
         if export_data:
             if export_type == "CSV":
-                csv_data = export.generate_batch_export(export_data)
+                units = st.session_state.get("units_selection", "Imperial")
+                csv_data = export.generate_batch_export(export_data, units=units)
                 st.download_button(
                     label="Download Batch CSV",
                     data=csv_data,
@@ -775,7 +828,10 @@ with tab4:
                 if st.button("Generate PDF Report"):
                     with st.spinner("Generating PDF..."):
                         try:
-                            pdf_data = export.generate_pdf_export(export_data)
+                            units = st.session_state.get("units_selection", "Imperial")
+                            pdf_data = export.generate_pdf_export(
+                                export_data, units=units
+                            )
                             st.session_state["pdf_generated_data"] = pdf_data
                             st.success("PDF Generated!")
                         except Exception as e:

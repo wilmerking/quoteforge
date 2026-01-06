@@ -1,70 +1,67 @@
-# QuoteForge
+# **Quote**Forge
 
-QuoteForge is a web application designed to evaluate parts for in-house manufacturing and generate quotes. It analyzes part geometries from STEP files, estimates costs based on materials, processes, and features, and provides recommendations on whether to manufacture in-house or outsource prototyping/production. Supports batch processing for multiple parts.
+QuoteForge is a professional manufacturing evaluation and quoting tool. It analyzes part geometries from STEP files, calculates detailed cost breakdowns based on materials and manufacturing processes, and generates comprehensive reports.
 
-## Overview
+## 🚀 Key Features
 
-This tool helps manufacturing teams quickly assess the feasibility and cost of producing parts internally. By importing 3D models (single or batch), selecting materials and processes, and leveraging a simple cost database, QuoteForge delivers accurate estimates and smart recommendations.
+- **4-Step Quoting Workflow**: Streamlined process from file import to final report.
+- **Robust Geometry Analysis**: Powered by **CadQuery**, automatically calculates volume, bounding box, and weight.
+- **Dynamic Thumbnails**: 2D SVG thumbnails with "Difference" blend mode for perfect visibility on both light and dark system themes.
+- **Unit Versatility**: Toggle instantly between **Imperial** and **Metric** units across the entire application and in exported reports.
+- **Live Cost Editing**: View detailed breakdowns (Setup vs. Run vs. Material) and manually override any rate or time estimate.
+- **Smart Material Selection**: Data-backed material catalog with priority sorting (e.g., Steel A36 at the top).
+- **Professional Exports**:
+  - **Batch CSV**: Data-dense export optimized for Google Sheets or Excel.
+  - **PDF Report**: High-quality branded PDF quotes including part thumbnails and detailed cost tables.
+- **Premium UI**: Custom-themed interface with an orange accent (#EA7600) and optimized layout for high information density.
 
-Built entirely in Python with **Streamlit** for the interactive web UI and **CadQuery** for STEP file parsing and geometry analysis (volume, weight, basic features).
+## 🛠️ Tech Stack
 
-## Features
+- **UI Framework**: Streamlit
+- **CAD Engine**: CadQuery (OpenCASCADE)
+- **PDF Generation**: ReportLab & Svglib
+- **Data Source**: Google Sheets (Synced live for materials and process rates)
+- **Language**: Python 3.10+
 
-- **Part Import**: Upload one or multiple STEP files (batch processing).
-- **Material Selection**: Choose from predefined materials with costs and densities.
-- **Process Selection**: Support for processes like machining, laser cutting, forming, tapping.
-- **Geometry Analysis**: Automatically compute volume, bounding box, estimated weight, and basic feature detection (e.g., holes, bends via approximations).
-- **Batch Processing**: Analyze multiple parts at once, with per-part details and aggregated totals.
-- **Material Database**: Lightweight SQLite for material options, costs, and densities.
-- **Cost Database**: Lightweight SQLite for process costs, setup times, per-part rates, and complexity multipliers.
-- **Estimations**: Detailed cost breakdowns (material + process + setup) per part and batch.
-- **Recommendations**: Simple rule-based suggestion (in-house if below threshold, else outsource).
-- **Visualization**: Interactive 3D preview of parts using PyVista in Streamlit.
+## ⚙️ Installation & Setup
 
-## Installation
+### Prerequisites
+
+- Python 3.10 or higher
+- [Conda](https://docs.conda.io/en/latest/) or Miniconda (Recommended for CadQuery)
+
+### Setup
 
 1. Clone the repository:
 
-   `git clone https://github.com/wilmerking/quoteforge.git`
+   ```bash
+   git clone https://github.com/wilmerking/quoteforge.git
+   cd quoteforge
+   ```
 
-2. Navigate to the project directory:
+2. The project includes a convenience script `run.sh` that handles dependency installation and starts the application:
 
-   `cd quoteforge`
+   ```bash
+   chmod +x run.sh
+   ./run.sh
+   ```
 
-3. Create a virtual environment and install dependencies:
+3. Open your browser to the local address displayed (usually `http://localhost:8501`).
 
-   `python -m venv venv`
-   `source venv/bin/activate`
-   `pip install -r requirements.txt`
+## 📖 Usage Guide
 
-4. Run the app:
+1. **Import**: Upload one or more STEP files. You can also load sample files to explore the tool.
+2. **Configuration**: Set quantities and manufacturing processes (Cutting, Machining, Finishing, etc.) for each part.
+3. **Costing**: Review the estimated costs. You can expand any part to see the line-item breakdown and override specific values.
+4. **Export**: Select your units and format (CSV or PDF) and download your final quote.
 
-   `./run.sh`
+## 📊 Data Management
 
-5. Open your browser (default: http://localhost:8501).
+QuoteForge uses **Google Sheets** as a live backend for material and process data. This allows manufacturing teams to update pricing and capabilities without touching a single line of code.
 
-6. Upload STEP file(s) – single or multiple for batch.
+- **Syncing**: Data is cached locally to ensure high performance.
+- **Customization**: Update the sheet URLs in `data_loader.py` or the configuration files to point to your own manufacturing standards.
 
-7. Select material and processes from the Google Sheets-backed catalog.
+---
 
-8. View geometry stats, cost estimates, and recommendations.
-
-9. Export results as CSV.
-
-## Data Management
-
-QuoteForge uses **Google Sheets** as the data source for materials and processes. This allows easy manual updates without code changes.
-
-- **Configuration**: `config.json` contains the Google Sheets CSV endpoint URLs.
-- **Caching**: Data is cached for 15 minutes (configurable) to reduce API calls.
-- **Updating Data**: Simply edit the Google Sheets, and changes will be reflected in the app after the cache expires.
-
-To modify materials or processes, update the linked Google Sheets directly.
-
-## Tech Stack Details
-
-- **UI**: Streamlit (fast prototyping, file upload, tables, charts).
-- **Geometry**: CadQuery (excellent STEP import, volume/mass properties, selectors for features).
-- **3D Preview**: PyVista + stpyvista component for interactive rendering in Streamlit.
-- **Database**: SQLite (simple, file-based).
-- **Future Extensions**: Add ReportLab for PDF quotes, more advanced feature recognition.
+Built with ❤️ for Modern Manufacturing.

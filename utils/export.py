@@ -66,7 +66,6 @@ def generate_batch_export(parts_data, units="Imperial"):
         if units == "Metric":
             # Conversion factors
             LBS_TO_KG = 0.453592
-            LB_TO_KG_PRICE = 2.20462  # 1 $/lb = 2.20462 $/kg
 
             weight_val = res.get("weight_lbs", 0) * LBS_TO_KG
 

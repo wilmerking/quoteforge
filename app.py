@@ -369,9 +369,7 @@ with tab2:
         material_names = materials_df["name"].tolist()
 
         if "priority" in materials_df.columns:
-            priority_materials = materials_df[materials_df["priority"] == True][
-                "name"
-            ].tolist()
+            priority_materials = materials_df[materials_df["priority"]]["name"].tolist()
             # "regular" list now includes ALL materials for the main dropdown section
             regular_materials = materials_df["name"].tolist()
 
@@ -703,11 +701,8 @@ with tab3:
             total_cost = cost_result["total_cost_batch"]
             grand_total += total_cost
 
-            cost_details = []
-            # Deep copy or construct new list for display to handle unit conversion without mutating original result
-            import copy
-
             raw_details = cost_result["breakdown"]
+            cost_details = []
 
             is_metric = st.session_state.get("units_selection") == "Metric"
 

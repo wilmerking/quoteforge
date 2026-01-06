@@ -5,3 +5,7 @@ numpy
 stpyvista
 trimesh
 matplotlib
+reportlab
+lxml
+tinycss2
+cssselect2

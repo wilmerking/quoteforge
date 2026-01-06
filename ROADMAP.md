@@ -8,19 +8,19 @@ This roadmap outlines the development plan for QuoteForge, divided into three st
 
 **Goal:** Establish the core analysis engine and basic cost estimation with manual overrides.
 
-- [ ] **Infrastructure Setup**
+- [x] **Infrastructure Setup**
   - Initialize SQLite database schema for materials, manufacturing processes, and labor rates.
   - Setup the Streamlit application framework and project structure.
-- [ ] **Core Geometry Analysis**
+- [x] **Core Geometry Analysis**
   - Integrate **CadQuery** for robust STEP file parsing.
   - Implement calculation of fundamental properties: Volume, Bounding Box dimensions, and Estimated Mass (depends on material density).
-- [ ] **Single Part Workflow**
+- [x] **Single Part Workflow**
   - Create a simple upload interface for a single STEP file.
   - Display parsed geometry stats in a clean table format.
-- [ ] **Manual Costing & Basic Logic**
+- [x] **Manual Costing & Basic Logic**
   - Implement a "Manual Override" mode where users can input material price/kg and labor rates.
   - Basic estimation engine: `Cost = (Material Volume * Density * Rate) + (Setup Time * Setup Rate)`.
-- [ ] **Data Export**
+- [x] **Data Export**
   - Export the single part estimation report to CSV.
 
 ---
@@ -29,7 +29,7 @@ This roadmap outlines the development plan for QuoteForge, divided into three st
 
 **Goal:** Scaling to batch processing, adding visualization, and automating manufacturing intelligence.
 
-- [ ] **Batch Processing Capabilities**
+- [x] **Batch Processing Capabilities**
   - Support for multi-file STEP uploads.
   - Support for zip file uploads of STEP files.
   - Aggregated view for batch totals (total weight, total cost, material requirements).

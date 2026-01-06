@@ -196,6 +196,11 @@ with tab1:
             ]
             for k in keys_to_clear:
                 del st.session_state[k]
+
+            # Clear generated PDF
+            if "pdf_generated_data" in st.session_state:
+                del st.session_state["pdf_generated_data"]
+
             st.rerun()
 
     # Sticky Footer (Import Tab Only)
@@ -709,8 +714,10 @@ with tab4:
         st.warning("No files imported.")
     else:
         st.write(
-            "Download a detailed CSV containing configuration and cost breakdown for all imported parts."
+            "Download a detailed report containing configuration and cost breakdown for all imported parts."
         )
+
+        export_type = st.radio("Export Format", ["CSV", "PDF"], horizontal=True)
 
         # Prepare data for export
         export_data = []
@@ -737,20 +744,47 @@ with tab4:
             # 3. Overrides
             overrides = st.session_state.cost_overrides.get(part_number, {})
 
+            # 4. Thumbnail SVG (for PDF)
+            thumb_key = f"thumb_v2_{part_number}"
+            thumbnail_svg = st.session_state.get(thumb_key)
+
             # Calculate
             result = costs.calculate_part_breakdown(config, volume_in3, overrides)
 
             export_data.append(
-                {"name": part_number, "config": config, "result": result}
+                {
+                    "name": part_number,
+                    "config": config,
+                    "result": result,
+                    "thumbnail_svg": thumbnail_svg,
+                }
             )
 
-        # Generate CSV
+        # Generate Export
         if export_data:
-            csv_data = export.generate_batch_export(export_data)
+            if export_type == "CSV":
+                csv_data = export.generate_batch_export(export_data)
+                st.download_button(
+                    label="Download Batch CSV",
+                    data=csv_data,
+                    file_name="quoteforge_batch_export.csv",
+                    mime="text/csv",
+                )
+            else:
+                # PDF Export
+                if st.button("Generate PDF Report"):
+                    with st.spinner("Generating PDF..."):
+                        try:
+                            pdf_data = export.generate_pdf_export(export_data)
+                            st.session_state["pdf_generated_data"] = pdf_data
+                            st.success("PDF Generated!")
+                        except Exception as e:
+                            st.error(f"Failed to generate PDF: {e}")
 
-            st.download_button(
-                label="Download Batch CSV",
-                data=csv_data,
-                file_name="quoteforge_batch_export.csv",
-                mime="text/csv",
-            )
+                if "pdf_generated_data" in st.session_state:
+                    st.download_button(
+                        label="Download PDF Report",
+                        data=st.session_state["pdf_generated_data"],
+                        file_name="quoteforge_report.pdf",
+                        mime="application/pdf",
+                    )
